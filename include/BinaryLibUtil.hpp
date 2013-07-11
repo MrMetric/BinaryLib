@@ -1,10 +1,13 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <stdint.h>
 #include <string.h> // for strerror
 #include <errno.h> // for errno
 #include <fstream> // for std::ifstream, remove, and rename
 #include <iostream> // for std::cerr
+
+#define VERSION 1
 
 class BinaryLibUtil
 {
@@ -12,6 +15,7 @@ class BinaryLibUtil
 		static bool fileExists(const char *filename);
 		static bool fileDelete(const char *filename);
 		static bool moveFile(std::string src, std::string dst, bool overwrite);
+		static uint32_t version();
 };
 
 #endif // UTIL_H

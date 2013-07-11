@@ -36,3 +36,8 @@ bool BinaryLibUtil::moveFile(std::string src, std::string dst, bool overwrite)
 	rename(src.c_str(), dst.c_str());
 	return true;
 }
+
+uint32_t BinaryLibUtil::version()
+{
+	return VERSION;
+}
