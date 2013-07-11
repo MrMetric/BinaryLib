@@ -168,13 +168,27 @@ long double BinaryReader::ReadFloat128()
 
 std::string BinaryReader::ReadString(uint64_t length)
 {
-	char* bytes = getBytes(length);
-	uint8_t buf[length];
-	for(uint64_t c = 0; c < length; ++c)
+	if(!this->isLoaded)
 	{
-		buf[c] = bytes[c];
+		std::cerr << "BinaryReader: called ReadString(" << length << "), but no file is loaded\n";
+		throw -1; // TODO: throw an exception
 	}
-	std::string s(reinterpret_cast<const char*>(buf), length);
+
+	// seek to the current position in the loaded file
+	fseek(this->file, this->pos, SEEK_SET);
+
+	// increment the current position for the next call to fseek
+	pos += length;
+
+	// make a char array and read data into it
+	char buf[length];
+	fread(buf, 1, length, this->file);
+	if(ferror(this->file))
+	{
+		perror("Error reading file");
+	}
+
+	std::string s(buf, length);
 	if(s.length() > length)
 	{
 		s = s.substr(0, length);
