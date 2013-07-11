@@ -66,17 +66,6 @@ void BinaryWriter::Close()
 	}
 }
 
-void BinaryWriter::Write7BitEncodedInt(int value)
-{
-	unsigned int temp = static_cast<unsigned int>(value);
-	while(temp >= 128)
-	{
-		WriteUInt8(static_cast<unsigned char>(temp | 0x80));
-		temp >>= 7;
-	}
-	WriteUInt8(static_cast<unsigned char>(temp));
-}
-
 bool BinaryWriter::WriteBool(bool b)
 {
 	if(!this->isLoaded) return false;
@@ -236,7 +225,16 @@ bool BinaryWriter::WriteUInt64(uint64_t i)
 
 bool BinaryWriter::WriteInt128(__int128 i)
 {
-	if(!this->isLoaded) return false;
+	if(!this->isLoaded)
+	{
+		return false;
+	}
+	if(sizeof(__int128) != 16)
+	{
+		std::cerr << "BinaryReader: __int128 size is " << sizeof(__int128) << " (expected 16)\n";
+		throw -1;
+	}
+
 	addBytes(16);
 	char buf[16];
 	buf[0] = i;
@@ -266,7 +264,16 @@ bool BinaryWriter::WriteInt128(__int128 i)
 
 bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 {
-	if(!this->isLoaded) return false;
+	if(!this->isLoaded)
+	{
+		return false;
+	}
+	if(sizeof(unsigned __int128) != 16)
+	{
+		std::cerr << "BinaryReader: unsigned __int128 size is " << sizeof(unsigned __int128) << " (expected 16)\n";
+		throw -1;
+	}
+
 	addBytes(16);
 	char buf[16];
 	buf[0] = i;
@@ -294,7 +301,7 @@ bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 	return true;
 }
 
-bool BinaryWriter::WriteFloat4(float value)
+bool BinaryWriter::WriteFloat32(float value)
 {
 	if(sizeof(float) == 4)
 	{
@@ -302,12 +309,12 @@ bool BinaryWriter::WriteFloat4(float value)
 	}
 	else // TODO: throw a proper exception
 	{
-		std::cerr << "BinaryReader: float size is " << sizeof(float) << " (expected 4)\n";
+		std::cerr << "BinaryWriter: float size is " << sizeof(float) << " (expected 4)\n";
 		throw -1;
 	}
 }
 
-bool BinaryWriter::WriteFloat8(double value)
+bool BinaryWriter::WriteFloat64(double value)
 {
 	if(sizeof(double) == 8)
 	{
@@ -320,7 +327,7 @@ bool BinaryWriter::WriteFloat8(double value)
 	}
 }
 
-bool BinaryWriter::WriteFloat16(FLOAT16 value)
+bool BinaryWriter::WriteFloat128(FLOAT16 value)
 {
 	if(sizeof(FLOAT16) == 16)
 	{
@@ -333,35 +340,48 @@ bool BinaryWriter::WriteFloat16(FLOAT16 value)
 	}
 }
 
-bool BinaryWriter::WriteBytes(unsigned char* c, int len)
-{
-	return this->WriteBytes(c, 0, len);
-}
-
-bool BinaryWriter::WriteBytes(unsigned char* c, int startpos, int len)
+// This is faster than using WriteInt8 in a loop
+bool BinaryWriter::WriteChars(int8_t* c, int len)
 {
 	if(!this->isLoaded) return false;
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
 	{
-		perror("Error writing file");
+		perror("BinaryWriter: Error writing file in WriteChars");
 		return false;
 	}
 	return true;
 }
 
-bool BinaryWriter::WriteChars(char* c, int len)
+// This is faster than using WriteUInt8 in a loop
+bool BinaryWriter::WriteBytes(uint8_t* c, int len)
 {
 	if(!this->isLoaded) return false;
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
 	{
-		perror("Error writing file");
+		perror("BinaryWriter: Error writing file is WriteBytes");
 		return false;
 	}
 	return true;
+}
+
+bool BinaryWriter::WriteString(std::string s)
+{
+	return this->WriteChars((int8_t*)s.c_str(), s.length());
+}
+
+// TODO: check the return value of WriteUInt8
+void BinaryWriter::Write7BitEncodedInt(uint32_t value)
+{
+	while(value >= 128)
+	{
+		WriteUInt8(static_cast<unsigned char>(value | 0x80));
+		value >>= 7;
+	}
+	WriteUInt8(static_cast<unsigned char>(value));
 }
 
 bool BinaryWriter::WriteStringMS(std::string s)
@@ -373,7 +393,7 @@ bool BinaryWriter::WriteStringMS(std::string s)
 	fwrite(s.c_str(), 1, len, this->file);
 	if(ferror(this->file))
 	{
-		perror("Error writing file");
+		perror("BinaryWriter: Error writing file in WriteStringMS");
 		return false;
 	}
 	return true;

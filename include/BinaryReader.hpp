@@ -14,8 +14,7 @@ class BinaryReader
 		void Close();
 		char* getBytes(uint_fast32_t bytes);
 
-		int Read7BitEncodedInt(uint_fast8_t b);
-
+		// 8-bit (1 byte)
 		bool ReadBool();
 
 		// 8-bit (1 byte)
@@ -38,11 +37,18 @@ class BinaryReader
 		__int128 ReadInt128();
 		unsigned __int128 ReadUInt128();
 
-		float ReadFloat4();
-		double ReadFloat8();
-		long double ReadFloat16();
+		// 32-bit (4 bytes)
+		float ReadFloat32();
 
-		std::string ReadString(uint_fast32_t length);
+		// 64-bit (8 bytes)
+		double ReadFloat64();
+
+		// 128-bit (16 bytes)
+		long double ReadFloat128();
+
+		std::string ReadString(uint64_t length);
+
+		uint32_t Read7BitEncodedInt(uint8_t b);
 		std::string ReadStringMS();
 
 		bool isLoaded;

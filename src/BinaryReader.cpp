@@ -46,10 +46,16 @@ char* BinaryReader::getBytes(uint_fast32_t bytes)
 	if(!this->isLoaded)
 	{
 		std::cerr << "BinaryReader: called getBytes(" << bytes << "), but no file is loaded\n";
-		throw -1;
+		throw -1; // TODO: throw an exception
 	}
+
+	// seek to the current position in the loaded file
 	fseek(this->file, this->pos, SEEK_SET);
+
+	// increment the current position for the next call to fseek
 	pos += bytes;
+
+	// make a char array and read data into it
 	char buf[bytes];
 	fread(buf, 1, bytes, this->file);
 	if(ferror(this->file))
@@ -57,20 +63,8 @@ char* BinaryReader::getBytes(uint_fast32_t bytes)
 		perror("Error reading file");
 	}
 
+	// get a pointer to the data and return it
 	char* ret = buf;
-	return ret;
-}
-
-int BinaryReader::Read7BitEncodedInt(uint_fast8_t b)
-{
-	int ret = 0;
-	int shift = 0;
-
-	do
-	{
-		ret = ret | ((b & 0x7f) << shift);
-		shift += 7;
-	} while ((b & 0x80) == 0x80);
 	return ret;
 }
 
@@ -133,7 +127,7 @@ unsigned __int128 BinaryReader::ReadUInt128()
 	return *(reinterpret_cast<unsigned __int128*>(getBytes(16)));
 }
 
-float BinaryReader::ReadFloat4()
+float BinaryReader::ReadFloat32()
 {
 	if(sizeof(float) == 4)
 	{
@@ -146,7 +140,7 @@ float BinaryReader::ReadFloat4()
 	}
 }
 
-double BinaryReader::ReadFloat8()
+double BinaryReader::ReadFloat64()
 {
 	if(sizeof(double) == 8)
 	{
@@ -159,7 +153,7 @@ double BinaryReader::ReadFloat8()
 	}
 }
 
-long double BinaryReader::ReadFloat16()
+long double BinaryReader::ReadFloat128()
 {
 	if(sizeof(long double) == 16)
 	{
@@ -172,11 +166,11 @@ long double BinaryReader::ReadFloat16()
 	}
 }
 
-std::string BinaryReader::ReadString(uint_fast32_t length)
+std::string BinaryReader::ReadString(uint64_t length)
 {
 	char* bytes = getBytes(length);
 	uint8_t buf[length];
-	for(uint_fast32_t c = 0; c < length; ++c)
+	for(uint64_t c = 0; c < length; ++c)
 	{
 		buf[c] = bytes[c];
 	}
@@ -186,6 +180,20 @@ std::string BinaryReader::ReadString(uint_fast32_t length)
 		s = s.substr(0, length);
 	}
 	return s;
+}
+
+// TODO: check accuracy
+uint32_t BinaryReader::Read7BitEncodedInt(uint8_t b)
+{
+	uint_fast32_t ret = 0;
+	uint_fast32_t shift = 0;
+
+	do
+	{
+		ret = ret | ((b & 0x7f) << shift);
+		shift += 7;
+	} while((b & 0x80) == 0x80);
+	return ret;
 }
 
 std::string BinaryReader::ReadStringMS()

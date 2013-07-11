@@ -16,31 +16,44 @@ class BinaryWriter
 		void addBytes(int i);
 		void Close();
 
-		void Write7BitEncodedInt(int value);
+		// 8-bit (1 byte)
 		bool WriteBool(bool b);
 
+		// 8-bit (1 byte)
 		bool WriteInt8(int8_t c);
 		bool WriteUInt8(uint8_t value);
 
+		// 16-bit (2 bytes)
 		bool WriteInt16(int16_t i);
 		bool WriteUInt16(uint16_t i);
 
+		// 32-bit (4 bytes)
 		bool WriteInt32(int32_t i);
 		bool WriteUInt32(uint32_t i);
 
+		// 64-bit (8 bytes)
 		bool WriteInt64(int64_t i);
 		bool WriteUInt64(uint64_t i);
 
+		// 128-bit (16 bytes)
 		bool WriteInt128(__int128 i);
 		bool WriteUInt128(unsigned __int128 i);
 
-		bool WriteFloat4(float value);
-		bool WriteFloat8(double value);
-		bool WriteFloat16(FLOAT16 value);
+		// 32-bit (4 bytes)
+		bool WriteFloat32(float value);
 
-		bool WriteBytes(unsigned char *c, int len);
-		bool WriteBytes(unsigned char *c, int startpos, int len);
-		bool WriteChars(char *c, int len);
+		// 64-bit (8 bytes)
+		bool WriteFloat64(double value);
+
+		// 128-bit (16 bytes)
+		bool WriteFloat128(FLOAT16 value);
+
+		bool WriteChars(int8_t* c, int len);
+		bool WriteBytes(uint8_t* c, int len);
+
+		bool WriteString(std::string s);
+
+		void Write7BitEncodedInt(uint32_t value);
 		bool WriteStringMS(std::string s);
 
 		bool isLoaded;
