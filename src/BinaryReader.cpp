@@ -183,7 +183,7 @@ std::string BinaryReader::ReadString(uint64_t length)
 }
 
 // TODO: check accuracy
-uint32_t BinaryReader::Read7BitEncodedInt(uint8_t b)
+/*uint32_t BinaryReader::Read7BitEncodedInt(uint8_t b)
 {
 	uint_fast32_t ret = 0;
 	uint_fast32_t shift = 0;
@@ -194,10 +194,31 @@ uint32_t BinaryReader::Read7BitEncodedInt(uint8_t b)
 		shift += 7;
 	} while((b & 0x80) == 0x80);
 	return ret;
+}*/
+
+
+// Derived from http://www.terrariaonline.com/threads/86509/
+uint32_t BinaryReader::Read7BitEncodedInt()
+{
+	int_fast32_t num = 0;
+	int_fast32_t num2 = 0;
+	while(num2 != 35)
+	{
+		uint8_t b = this->ReadUInt8();
+		num |= (int_fast32_t)(b & 127) << num2;
+		num2 += 7;
+		if((b & 128) == 0)
+		{
+			return num;
+		}
+	}
+	//throw new FormatException("Failed to read a Microsoft 7-bit encoded integer");
+	std::cerr << "BinaryReader: Failed to read a Microsoft 7-bit encoded integer\n";
+	throw -1;
 }
 
 std::string BinaryReader::ReadStringMS()
 {
-	int len = this->Read7BitEncodedInt(getBytes(1)[0]);
+	int len = this->Read7BitEncodedInt();
 	return this->ReadString(len);
 }
