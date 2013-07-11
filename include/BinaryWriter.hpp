@@ -3,7 +3,7 @@
 
 #include <stdint.h>
 #include <sstream> // for std::stringstream
-#include "Util.hpp" // for Util functions and the file functions in stdio.h (included in fstream)
+#include "BinaryLibUtil.hpp" // for Util functions and the file functions in stdio.h (included in fstream)
 
 // if you change this, don't forget to recompile the library!
 #define FLOAT16 long double

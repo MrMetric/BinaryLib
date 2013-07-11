@@ -19,17 +19,17 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 	this->isLoaded = false;
 	this->fname = s;
 	this->totalBytes = 0;
-	if(Util::fileExists(s.c_str()))
+	if(BinaryLibUtil::fileExists(s.c_str()))
 	{
 		if(bak)
 		{
 			std::stringstream ss;
 			ss << s << ".bak";
-			Util::moveFile(s.c_str(), ss.str().c_str(), true);
+			BinaryLibUtil::moveFile(s.c_str(), ss.str().c_str(), true);
 		}
 		else
 		{
-			Util::fileDelete(s.c_str());
+			BinaryLibUtil::fileDelete(s.c_str());
 		}
 	}
 	this->file = fopen(s.c_str(), "ar+b");

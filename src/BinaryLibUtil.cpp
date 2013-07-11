@@ -1,7 +1,7 @@
-#include "../include/Util.hpp"
+#include "../include/BinaryLibUtil.hpp"
 
 // from http://www.cplusplus.com/forum/general/1796/
-bool Util::fileExists(const char *filename)
+bool BinaryLibUtil::fileExists(const char *filename)
 {
 	std::ifstream ifile(filename);
 	bool exists = (ifile != NULL);
@@ -9,7 +9,7 @@ bool Util::fileExists(const char *filename)
 	return exists;
 }
 
-bool Util::fileDelete(const char *filename)
+bool BinaryLibUtil::fileDelete(const char *filename)
 {
 	if(!remove(filename) && errno != 0)
 	{
@@ -20,7 +20,7 @@ bool Util::fileDelete(const char *filename)
 	return true;
 }
 
-bool Util::moveFile(std::string src, std::string dst, bool overwrite)
+bool BinaryLibUtil::moveFile(std::string src, std::string dst, bool overwrite)
 {
 	//cout << "Moving " << src << " to " << dst << endl;
 	if(overwrite && fileExists(dst.c_str()) && !fileDelete(dst.c_str()))
@@ -28,7 +28,7 @@ bool Util::moveFile(std::string src, std::string dst, bool overwrite)
 		std::cerr << "Error renaming \"" << src << "\" to \"" << dst << "\" (failed to delete existing file)\n";
 		return false;
 	}
-	else if(Util::fileExists(dst.c_str()))
+	else if(BinaryLibUtil::fileExists(dst.c_str()))
 	{
 		std::cerr << "Error renaming \"" << src << "\" to \"" << dst << "\" (file already exists)\n";
 		return false;

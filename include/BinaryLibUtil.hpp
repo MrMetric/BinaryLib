@@ -6,7 +6,7 @@
 #include <fstream> // for std::ifstream, remove, and rename
 #include <iostream> // for std::cerr
 
-class Util
+class BinaryLibUtil
 {
 	public:
 		static bool fileExists(const char *filename);
