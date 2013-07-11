@@ -37,10 +37,10 @@
 		</Build>
 		<Unit filename="include/BinaryReader.hpp" />
 		<Unit filename="include/BinaryWriter.hpp" />
-		<Unit filename="include/Util.hpp" />
+		<Unit filename="include/BinaryLibUtil.hpp" />
 		<Unit filename="src/BinaryReader.cpp" />
 		<Unit filename="src/BinaryWriter.cpp" />
-		<Unit filename="src/Util.cpp" />
+		<Unit filename="src/BinaryLibUtil.cpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

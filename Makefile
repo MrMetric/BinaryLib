@@ -40,9 +40,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/libbinary.a
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryReader.o $(OBJDIR_DEBUG)/src/BinaryWriter.o $(OBJDIR_DEBUG)/src/Util.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryReader.o $(OBJDIR_DEBUG)/src/BinaryWriter.o $(OBJDIR_DEBUG)/src/BinaryLibUtil.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o $(OBJDIR_RELEASE)/src/Util.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o $(OBJDIR_RELEASE)/src/BinaryLibUtil.o
 
 all: debug release
 
@@ -65,8 +65,8 @@ $(OBJDIR_DEBUG)/src/BinaryReader.o: src/BinaryReader.cpp
 $(OBJDIR_DEBUG)/src/BinaryWriter.o: src/BinaryWriter.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryWriter.cpp -o $(OBJDIR_DEBUG)/src/BinaryWriter.o
 
-$(OBJDIR_DEBUG)/src/Util.o: src/Util.cpp
-	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/Util.cpp -o $(OBJDIR_DEBUG)/src/Util.o
+$(OBJDIR_DEBUG)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryLibUtil.cpp -o $(OBJDIR_DEBUG)/src/BinaryLibUtil.o
 
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
@@ -90,8 +90,8 @@ $(OBJDIR_RELEASE)/src/BinaryReader.o: src/BinaryReader.cpp
 $(OBJDIR_RELEASE)/src/BinaryWriter.o: src/BinaryWriter.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryWriter.cpp -o $(OBJDIR_RELEASE)/src/BinaryWriter.o
 
-$(OBJDIR_RELEASE)/src/Util.o: src/Util.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/Util.cpp -o $(OBJDIR_RELEASE)/src/Util.o
+$(OBJDIR_RELEASE)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryLibUtil.cpp -o $(OBJDIR_RELEASE)/src/BinaryLibUtil.o
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)
