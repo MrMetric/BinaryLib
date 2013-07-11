@@ -1,6 +1,5 @@
 #include "../include/BinaryWriter.hpp"
 #include <sstream> // for std::stringstream
-#include <cstdlib> // for malloc
 
 /**
 	BinaryWriter.cpp
