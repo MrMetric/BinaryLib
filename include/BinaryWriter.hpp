@@ -2,7 +2,6 @@
 #define BINARYWRITER_H
 
 #include <stdint.h>
-#include <sstream> // for std::stringstream
 #include "BinaryLibUtil.hpp" // for Util functions and the file functions in stdio.h (included in fstream)
 
 // if you change this, don't forget to recompile the library!
@@ -48,8 +47,8 @@ class BinaryWriter
 		// 128-bit (16 bytes)
 		bool WriteFloat128(FLOAT16 value);
 
-		bool WriteChars(int8_t* c, int len);
-		bool WriteBytes(uint8_t* c, int len);
+		bool WriteChars(int8_t* c, uint64_t len, uint64_t startpos = 0);
+		bool WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos = 0);
 
 		bool WriteString(std::string s);
 

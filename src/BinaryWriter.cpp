@@ -1,4 +1,6 @@
 #include "../include/BinaryWriter.hpp"
+#include <sstream> // for std::stringstream
+#include <cstdlib> // for malloc
 
 /**
 	BinaryWriter.cpp
@@ -341,9 +343,17 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 }
 
 // This is faster than using WriteInt8 in a loop
-bool BinaryWriter::WriteChars(int8_t* c, int len)
+bool BinaryWriter::WriteChars(int8_t* c, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
+
+	if(startpos != 0)
+	{
+		len -= startpos;
+		std::basic_string<int8_t> s = c;
+		s = s.substr(startpos);
+		c = (int8_t*)s.c_str();
+	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
@@ -355,14 +365,22 @@ bool BinaryWriter::WriteChars(int8_t* c, int len)
 }
 
 // This is faster than using WriteUInt8 in a loop
-bool BinaryWriter::WriteBytes(uint8_t* c, int len)
+bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
+
+	if(startpos != 0)
+	{
+		len -= startpos;
+		std::basic_string<uint8_t> s = c;
+		s = s.substr(startpos);
+		c = (uint8_t*)s.c_str();
+	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
 	{
-		perror("BinaryWriter: Error writing file is WriteBytes");
+		perror("BinaryWriter: Error writing file in WriteBytes");
 		return false;
 	}
 	return true;
