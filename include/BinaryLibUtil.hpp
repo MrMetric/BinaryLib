@@ -7,7 +7,7 @@
 #include <fstream> // for std::ifstream, remove, and rename
 #include <iostream> // for std::cerr
 
-#define VERSION 2
+#define BINARYLIB_VERSION 2
 
 class BinaryLibUtil
 {

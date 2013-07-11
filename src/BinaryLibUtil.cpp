@@ -39,5 +39,5 @@ bool BinaryLibUtil::moveFile(std::string src, std::string dst, bool overwrite)
 
 uint32_t BinaryLibUtil::version()
 {
-	return VERSION;
+	return BINARYLIB_VERSION;
 }
