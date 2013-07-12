@@ -12,7 +12,7 @@ class BinaryWriter
 {
 	public:
 		BinaryWriter(std::string s, bool bak = true);
-		void addBytes(int i);
+		inline void addBytes(uint_fast32_t i);
 		void Close();
 
 		// 8-bit (1 byte)

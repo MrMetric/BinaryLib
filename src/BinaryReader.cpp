@@ -1,4 +1,8 @@
 #include "../include/BinaryReader.hpp"
+#include <stdio.h> // for file functions
+#include <sstream>
+
+#define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
 
 /**
 	BinaryReader.cpp
@@ -8,20 +12,33 @@
 	 - single characters (8-bit int) or strings of characters (in std::string)
 	It can read Microsoft-style strings (one byte before the string specifies the length)
 
+	Thanks to Matt Davis for the reinterpret_cast usage
+		http://stackoverflow.com/a/545020/1578318
+
 	@todo		Check return values of fread
-	@todo		Make an exception class to throw when errors occur
-	@arg		s The file to read
+	@todo		Make an exception class to throw when errors occur instead of using std::string
 */
 
+/**
+	@arg		s The file to read
+*/
 BinaryReader::BinaryReader(std::string s)
 {
 	this->isLoaded = false;
 	this->ChangeFile(s);
 }
 
+/**
+	Close the current file, if one is loaded, and open a file
+	@arg		s The file to read
+*/
 void BinaryReader::ChangeFile(std::string s)
 {
-	if(this->isLoaded) this->Close();
+	if(this->isLoaded)
+	{
+		this->Close();
+	}
+
 	this->fname = s;
 	this->pos = 0;
 	this->file = fopen(s.c_str(), "rb");
@@ -32,7 +49,10 @@ void BinaryReader::ChangeFile(std::string s)
 	{
 		perror("Error opening file");
 	}
-	else this->isLoaded = true;
+	else
+	{
+		this->isLoaded = true;
+	}
 }
 
 void BinaryReader::Close()
@@ -45,8 +65,7 @@ char* BinaryReader::getBytes(uint_fast32_t bytes)
 {
 	if(!this->isLoaded)
 	{
-		std::cerr << "BinaryReader: called getBytes(" << bytes << "), but no file is loaded\n";
-		throw -1; // TODO: throw an exception
+		throw MAKESTR("BinaryReader: called getBytes(" << bytes << "), but no file is loaded");
 	}
 
 	// seek to the current position in the loaded file
@@ -90,15 +109,11 @@ int16_t BinaryReader::ReadInt16()
 
 uint16_t BinaryReader::ReadUInt16()
 {
-	/*char tmp1 = buf[0];
-	buf[0] = buf[1];
-	buf[1] = tmp1;*/
 	return *(reinterpret_cast<uint16_t*>(getBytes(2)));
 }
 
 int32_t BinaryReader::ReadInt32()
 {
-	// this cast is from Matt Davis at http://stackoverflow.com/questions/544928/reading-integer-size-bytes-from-a-char-array
 	return *(reinterpret_cast<int32_t*>(getBytes(4)));
 }
 
@@ -133,10 +148,9 @@ float BinaryReader::ReadFloat32()
 	{
 		return *(reinterpret_cast<float*>(getBytes(4)));
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryReader: float size is " << sizeof(float) << " (expected 4)\n";
-		throw -1;
+		throw MAKESTR("BinaryReader: float size is " << sizeof(float) << " (expected 4)");
 	}
 }
 
@@ -146,10 +160,9 @@ double BinaryReader::ReadFloat64()
 	{
 		return *(reinterpret_cast<double*>(getBytes(8)));
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryReader: double size is " << sizeof(double) << " (expected 8)\n";
-		throw -1;
+		throw MAKESTR("BinaryReader: double size is " << sizeof(double) << " (expected 8)");
 	}
 }
 
@@ -159,10 +172,9 @@ long double BinaryReader::ReadFloat128()
 	{
 		return *(reinterpret_cast<long double*>(getBytes(16)));
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryReader: long double size is " << sizeof(long double) << " (expected 16)\n";
-		throw -1;
+		throw MAKESTR("BinaryReader: long double size is " << sizeof(long double) << " (expected 16)");
 	}
 }
 
@@ -170,8 +182,7 @@ std::string BinaryReader::ReadString(uint64_t length)
 {
 	if(!this->isLoaded)
 	{
-		std::cerr << "BinaryReader: called ReadString(" << length << "), but no file is loaded\n";
-		throw -1; // TODO: throw an exception
+		throw MAKESTR("BinaryReader: called ReadString(" << length << "), but no file is loaded");
 	}
 
 	// seek to the current position in the loaded file
@@ -226,9 +237,7 @@ uint32_t BinaryReader::Read7BitEncodedInt()
 			return num;
 		}
 	}
-	//throw new FormatException("Failed to read a Microsoft 7-bit encoded integer");
-	std::cerr << "BinaryReader: Failed to read a Microsoft 7-bit encoded integer\n";
-	throw -1;
+	throw std::string("BinaryReader: Failed to read a Microsoft 7-bit encoded integer");
 }
 
 std::string BinaryReader::ReadStringMS()

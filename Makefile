@@ -12,7 +12,7 @@ LD = g++
 WINDRES = windres
 
 INC = 
-CFLAGS = 
+CFLAGS = -std=c++11
 RESINC = 
 LIBDIR = 
 LIB = 
@@ -40,9 +40,9 @@ OBJDIR_RELEASE = obj/Release
 DEP_RELEASE = 
 OUT_RELEASE = bin/Release/libbinary.a
 
-OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryReader.o $(OBJDIR_DEBUG)/src/BinaryWriter.o $(OBJDIR_DEBUG)/src/BinaryLibUtil.o
+OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryLibUtil.o $(OBJDIR_DEBUG)/src/BinaryReader.o $(OBJDIR_DEBUG)/src/BinaryWriter.o
 
-OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o $(OBJDIR_RELEASE)/src/BinaryLibUtil.o
+OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryLibUtil.o $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o
 
 all: debug release
 
@@ -59,14 +59,14 @@ debug: before_debug out_debug after_debug
 out_debug: before_debug $(OBJ_DEBUG) $(DEP_DEBUG)
 	$(AR) rcs $(OUT_DEBUG) $(OBJ_DEBUG)
 
+$(OBJDIR_DEBUG)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
+	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryLibUtil.cpp -o $(OBJDIR_DEBUG)/src/BinaryLibUtil.o
+
 $(OBJDIR_DEBUG)/src/BinaryReader.o: src/BinaryReader.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryReader.cpp -o $(OBJDIR_DEBUG)/src/BinaryReader.o
 
 $(OBJDIR_DEBUG)/src/BinaryWriter.o: src/BinaryWriter.cpp
 	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryWriter.cpp -o $(OBJDIR_DEBUG)/src/BinaryWriter.o
-
-$(OBJDIR_DEBUG)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
-	$(CXX) $(CFLAGS_DEBUG) $(INC_DEBUG) -c src/BinaryLibUtil.cpp -o $(OBJDIR_DEBUG)/src/BinaryLibUtil.o
 
 clean_debug: 
 	rm -f $(OBJ_DEBUG) $(OUT_DEBUG)
@@ -84,14 +84,14 @@ release: before_release out_release after_release
 out_release: before_release $(OBJ_RELEASE) $(DEP_RELEASE)
 	$(AR) rcs $(OUT_RELEASE) $(OBJ_RELEASE)
 
+$(OBJDIR_RELEASE)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
+	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryLibUtil.cpp -o $(OBJDIR_RELEASE)/src/BinaryLibUtil.o
+
 $(OBJDIR_RELEASE)/src/BinaryReader.o: src/BinaryReader.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryReader.cpp -o $(OBJDIR_RELEASE)/src/BinaryReader.o
 
 $(OBJDIR_RELEASE)/src/BinaryWriter.o: src/BinaryWriter.cpp
 	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryWriter.cpp -o $(OBJDIR_RELEASE)/src/BinaryWriter.o
-
-$(OBJDIR_RELEASE)/src/BinaryLibUtil.o: src/BinaryLibUtil.cpp
-	$(CXX) $(CFLAGS_RELEASE) $(INC_RELEASE) -c src/BinaryLibUtil.cpp -o $(OBJDIR_RELEASE)/src/BinaryLibUtil.o
 
 clean_release: 
 	rm -f $(OBJ_RELEASE) $(OUT_RELEASE)

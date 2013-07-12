@@ -1,5 +1,8 @@
 #include "../include/BinaryWriter.hpp"
 #include <sstream> // for std::stringstream
+#include <stdexcept> // for std::out_of_range
+
+#define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
 
 /**
 	BinaryWriter.cpp
@@ -9,7 +12,7 @@
 	 - single characters (8-bit int) or strings of characters (in char*)
 	 - Microsoft-style strings (one byte before the string specifies the length)
 
-	@todo		Make an exception class to throw when errors occur
+	@todo		Make an exception class to throw when errors occur instead of using std::string
 	@arg s		The file to write
 	@arg bak	If this is true, the pre-existing file (if there is one) with the name
 				specified in the previous argument will have .bak appended to its name
@@ -24,9 +27,8 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 	{
 		if(bak)
 		{
-			std::stringstream ss;
-			ss << s << ".bak";
-			BinaryLibUtil::moveFile(s.c_str(), ss.str().c_str(), true);
+			std::string s_bak = s + std::string(".bak");
+			BinaryLibUtil::moveFile(s.c_str(), s_bak.c_str(), true);
 		}
 		else
 		{
@@ -34,13 +36,9 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 		}
 	}
 	this->file = fopen(s.c_str(), "ar+b");
-	if(this->file == NULL)
+	if(this->file == NULL || ferror(this->file))
 	{
-		std::cerr << "BinaryWriter: Error opening file: " << strerror(errno) << "\n";
-	}
-	else if(ferror(this->file))
-	{
-		perror("BinaryWriter: Error opening file");
+		throw MAKESTR("BinaryWriter: Error opening file: " << strerror(errno));
 	}
 	else
 	{
@@ -48,7 +46,7 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 	}
 }
 
-void BinaryWriter::addBytes(int i)
+inline void BinaryWriter::addBytes(uint_fast32_t i)
 {
 	this->totalBytes += i;
 	// I used this for debugging
@@ -61,9 +59,9 @@ void BinaryWriter::Close()
 	{
 		fclose(this->file);
 	}
-	else // TODO: throw an exception
+	else
 	{
-		throw -1;
+		throw std::string("BinaryWriter: Called Close(), but no file is open");
 	}
 }
 
@@ -232,8 +230,7 @@ bool BinaryWriter::WriteInt128(__int128 i)
 	}
 	if(sizeof(__int128) != 16)
 	{
-		std::cerr << "BinaryReader: __int128 size is " << sizeof(__int128) << " (expected 16)\n";
-		throw -1;
+		throw MAKESTR("BinaryReader: __int128 size is " << sizeof(__int128) << " (expected 16)");
 	}
 
 	addBytes(16);
@@ -271,8 +268,7 @@ bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 	}
 	if(sizeof(unsigned __int128) != 16)
 	{
-		std::cerr << "BinaryReader: unsigned __int128 size is " << sizeof(unsigned __int128) << " (expected 16)\n";
-		throw -1;
+		throw MAKESTR("BinaryReader: unsigned __int128 size is " << sizeof(unsigned __int128) << " (expected 16)");
 	}
 
 	addBytes(16);
@@ -308,10 +304,9 @@ bool BinaryWriter::WriteFloat32(float value)
 	{
 		return this->WriteInt32(*(int32_t*)&value);
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryWriter: float size is " << sizeof(float) << " (expected 4)\n";
-		throw -1;
+		throw MAKESTR("BinaryWriter: float size is " << sizeof(float) << " (expected 4)");
 	}
 }
 
@@ -321,10 +316,9 @@ bool BinaryWriter::WriteFloat64(double value)
 	{
 		return this->WriteInt64(*(int64_t*)&value);
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryWriter: double size is " << sizeof(double) << " (expected 8)\n";
-		throw -1;
+		throw MAKESTR("BinaryWriter: double size is " << sizeof(double) << " (expected 8)");
 	}
 }
 
@@ -334,10 +328,9 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 	{
 		return this->WriteInt128(*(__int128*)&value);
 	}
-	else // TODO: throw a proper exception
+	else
 	{
-		std::cerr << "BinaryWriter: long double size is " << sizeof(FLOAT16) << " (expected 16)\n";
-		throw -1;
+		throw MAKESTR("BinaryWriter: long double size is " << sizeof(FLOAT16) << " (expected 16)");
 	}
 }
 
@@ -348,10 +341,24 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t len, uint64_t startpos)
 
 	if(startpos != 0)
 	{
-		len -= startpos;
-		std::basic_string<int8_t> s = c;
-		s = s.substr(startpos);
-		c = (int8_t*)s.c_str();
+		if(startpos == len)
+		{
+			std::cout << "BinaryWriter: Warning: startpos == len in WriteChars\n";
+			return true;
+		}
+
+		try
+		{
+			len -= startpos;
+			std::basic_string<int8_t> s = c;
+			s = s.substr(startpos);
+			c = (int8_t*)s.c_str();
+		}
+		catch(std::out_of_range e)
+		{
+			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteChars\nlen: " << len << " (" << len + startpos << ")\nstartpos: " << startpos << "\n";
+			throw e;
+		}
 	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
@@ -370,10 +377,24 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos)
 
 	if(startpos != 0)
 	{
-		len -= startpos;
-		std::basic_string<uint8_t> s = c;
-		s = s.substr(startpos);
-		c = (uint8_t*)s.c_str();
+		if(startpos == len)
+		{
+			std::cout << "BinaryWriter: Warning: startpos == len in WriteBytes\n";
+			return true;
+		}
+
+		try
+		{
+			len -= startpos;
+			std::basic_string<uint8_t> s = c;
+			s = s.substr(startpos);
+			c = (uint8_t*)s.c_str();
+		}
+		catch(std::out_of_range e)
+		{
+			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteBytes\nlen: " << len << " (" << len + startpos << ")\nstartpos: " << startpos << "\n";
+			throw e;
+		}
 	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);

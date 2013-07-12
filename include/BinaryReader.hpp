@@ -2,9 +2,7 @@
 #define BINARYREADER_H
 
 #include <stdint.h>
-#include <stdio.h> // for file functions
 #include <string> // for std::string
-#include <iostream> // for std::cout and std::cerr
 
 class BinaryReader
 {
