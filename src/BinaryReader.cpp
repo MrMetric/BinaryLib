@@ -1,6 +1,7 @@
 #include "../include/BinaryReader.hpp"
 #include <stdio.h> // for file functions
 #include <sstream>
+#include <string.h> // for strerror and errno
 
 #define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
 
@@ -42,17 +43,18 @@ void BinaryReader::ChangeFile(std::string s)
 	this->fname = s;
 	this->pos = 0;
 	this->file = fopen(s.c_str(), "rb");
+	if(this->file == NULL || ferror(this->file))
+	{
+		throw MAKESTR("BinaryReader: Error opening file: " << strerror(errno));
+	}
 	fseek(file, 0, SEEK_END);
 	this->fSize = ftell(file);
 	rewind(file);
 	if(ferror(this->file))
 	{
-		perror("Error opening file");
+		throw MAKESTR("BinaryWriter: Error getting file info: " << strerror(errno));
 	}
-	else
-	{
-		this->isLoaded = true;
-	}
+	this->isLoaded = true;
 }
 
 void BinaryReader::Close()
