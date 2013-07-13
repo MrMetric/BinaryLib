@@ -44,7 +44,7 @@ class BinaryReader
 		// 128-bit (16 bytes)
 		long double ReadFloat128();
 
-		std::string ReadString(uint64_t length);
+		std::string ReadString(uint_fast64_t length);
 
 		//uint32_t Read7BitEncodedInt(uint8_t b);
 		uint64_t Read7BitEncodedInt();
@@ -52,9 +52,9 @@ class BinaryReader
 
 		bool isLoaded;
 		std::string fname;
-		int pos;
+		uint_fast64_t pos;
 		FILE *file;
-		long fSize;
+		uint_fast64_t fSize;
 };
 
 #endif // BINARYREADER_H

@@ -65,7 +65,7 @@ char* BinaryReader::getBytes(uint_fast32_t bytes)
 {
 	if(!this->isLoaded)
 	{
-		throw MAKESTR("BinaryReader: called getBytes(" << bytes << "), but no file is loaded");
+		throw MAKESTR("Called getBytes(" << bytes << "), but no file is loaded");
 	}
 
 	// seek to the current position in the loaded file
@@ -150,7 +150,7 @@ float BinaryReader::ReadFloat32()
 	}
 	else
 	{
-		throw MAKESTR("BinaryReader: float size is " << sizeof(float) << " (expected 4)");
+		throw MAKESTR("float size is " << sizeof(float) << " (expected 4)");
 	}
 }
 
@@ -162,7 +162,7 @@ double BinaryReader::ReadFloat64()
 	}
 	else
 	{
-		throw MAKESTR("BinaryReader: double size is " << sizeof(double) << " (expected 8)");
+		throw MAKESTR("double size is " << sizeof(double) << " (expected 8)");
 	}
 }
 
@@ -174,15 +174,15 @@ long double BinaryReader::ReadFloat128()
 	}
 	else
 	{
-		throw MAKESTR("BinaryReader: long double size is " << sizeof(long double) << " (expected 16)");
+		throw MAKESTR("long double size is " << sizeof(long double) << " (expected 16)");
 	}
 }
 
-std::string BinaryReader::ReadString(uint64_t length)
+std::string BinaryReader::ReadString(uint_fast64_t length)
 {
 	if(!this->isLoaded)
 	{
-		throw MAKESTR("BinaryReader: called ReadString(" << length << "), but no file is loaded");
+		throw MAKESTR("Called ReadString(" << length << "), but no file is loaded");
 	}
 
 	// seek to the current position in the loaded file
@@ -227,8 +227,9 @@ std::string BinaryReader::ReadString(uint64_t length)
 // Derived from http://www.terrariaonline.com/threads/86509/
 uint64_t BinaryReader::Read7BitEncodedInt()
 {
-	int_fast32_t ret = 0;
-	int_fast32_t shift = 0;
+	uint_fast64_t ret = 0;
+	uint_fast8_t shift = 0;
+
 	while(shift != 70) // maximum shifting is 7 * 9
 	{
 		uint8_t b = this->ReadUInt8();
@@ -239,7 +240,7 @@ uint64_t BinaryReader::Read7BitEncodedInt()
 			return ret;
 		}
 	}
-	throw std::string("BinaryReader: Failed to read a Microsoft 7-bit encoded integer");
+	throw std::string("Failed to read a Microsoft 7-bit encoded integer");
 }
 
 std::string BinaryReader::ReadStringMS()
