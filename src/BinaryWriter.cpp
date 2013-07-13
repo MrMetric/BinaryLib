@@ -46,13 +46,6 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 	}
 }
 
-inline void BinaryWriter::addBytes(uint_fast32_t i)
-{
-	this->totalBytes += i;
-	// I used this for debugging
-	//cout << "Wrote " << i << (i==1?" byte":" bytes") << endl;
-}
-
 void BinaryWriter::Close()
 {
 	if(this->isLoaded)
@@ -68,7 +61,7 @@ void BinaryWriter::Close()
 bool BinaryWriter::WriteBool(bool b)
 {
 	if(!this->isLoaded) return false;
-	addBytes(1);
+	++this->totalBytes;
 	char buf[1];
 	buf[0] = (b?1:0);
 	fwrite(buf, 1, 1, this->file);
@@ -98,7 +91,7 @@ bool BinaryWriter::WriteInt8(int8_t c)
 bool BinaryWriter::WriteUInt8(uint8_t value)
 {
 	if(!this->isLoaded) return false;
-	addBytes(1);
+	++this->totalBytes;
 	char buf[1];
 	buf[0] = value;
 	fwrite(buf, 1, 1, this->file);
@@ -113,7 +106,7 @@ bool BinaryWriter::WriteUInt8(uint8_t value)
 bool BinaryWriter::WriteInt16(int16_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(2);
+	this->totalBytes += 2;
 	char buf[2];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -129,7 +122,7 @@ bool BinaryWriter::WriteInt16(int16_t i)
 bool BinaryWriter::WriteUInt16(uint16_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(2);
+	this->totalBytes += 2;
 	char buf[2];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -145,7 +138,7 @@ bool BinaryWriter::WriteUInt16(uint16_t i)
 bool BinaryWriter::WriteInt32(int32_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(4);
+	this->totalBytes += 4;
 	char buf[4];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -163,7 +156,7 @@ bool BinaryWriter::WriteInt32(int32_t i)
 bool BinaryWriter::WriteUInt32(uint32_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(4);
+	this->totalBytes += 4;
 	char buf[4];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -181,7 +174,7 @@ bool BinaryWriter::WriteUInt32(uint32_t i)
 bool BinaryWriter::WriteInt64(int64_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(8);
+	this->totalBytes += 8;
 	char buf[8];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -203,7 +196,7 @@ bool BinaryWriter::WriteInt64(int64_t i)
 bool BinaryWriter::WriteUInt64(uint64_t i)
 {
 	if(!this->isLoaded) return false;
-	addBytes(8);
+	this->totalBytes += 8;
 	char buf[8];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -233,7 +226,7 @@ bool BinaryWriter::WriteInt128(__int128 i)
 		throw MAKESTR("BinaryReader: __int128 size is " << sizeof(__int128) << " (expected 16)");
 	}
 
-	addBytes(16);
+	this->totalBytes += 16;
 	char buf[16];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -271,7 +264,7 @@ bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 		throw MAKESTR("BinaryReader: unsigned __int128 size is " << sizeof(unsigned __int128) << " (expected 16)");
 	}
 
-	addBytes(16);
+	this->totalBytes += 16;
 	char buf[16];
 	buf[0] = i;
 	buf[1] = (i >> 8);
@@ -364,7 +357,7 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_
 	{
 		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
 	}
-	addBytes(len);
+	this->totalBytes += len;
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
 	{
@@ -404,7 +397,7 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64
 	{
 		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
 	}
-	addBytes(len);
+	this->totalBytes += len;
 	fwrite(c, 1, len, this->file);
 	if(ferror(this->file))
 	{
@@ -420,21 +413,23 @@ bool BinaryWriter::WriteString(std::string s)
 }
 
 // TODO: check the return value of WriteUInt8
-void BinaryWriter::Write7BitEncodedInt(uint32_t value)
+// WARNING: this might not be accurate for large values!
+void BinaryWriter::Write7BitEncodedInt(uint64_t value)
 {
 	while(value >= 128)
 	{
-		WriteUInt8(static_cast<unsigned char>(value | 0x80));
+		WriteUInt8(static_cast<uint8_t>(value | 0x80));
 		value >>= 7;
 	}
-	WriteUInt8(static_cast<unsigned char>(value));
+	WriteUInt8(static_cast<uint8_t>(value));
 }
 
 bool BinaryWriter::WriteStringMS(std::string s)
 {
 	if(!this->isLoaded) return false;
+
 	int len = s.length();
-	addBytes(len);
+	this->totalBytes += len;
 	Write7BitEncodedInt(len);
 	fwrite(s.c_str(), 1, len, this->file);
 	if(ferror(this->file))
