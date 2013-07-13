@@ -44,9 +44,9 @@ OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryLibUtil.o $(OBJDIR_DEBUG)/src/BinaryReader
 
 OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryLibUtil.o $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o
 
-all: debug release debug_w32 release_w32
+all: debug release
 
-clean: clean_debug clean_release clean_debug_w32 clean_release_w32
+clean: clean_debug clean_release
 
 before_debug: 
 	test -d bin/Debug || mkdir -p bin/Debug
