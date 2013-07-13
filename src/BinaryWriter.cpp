@@ -349,9 +349,9 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_
 
 		try
 		{
-			bufSize -= startpos;
-			std::basic_string<int8_t> s = c;
+			std::basic_string<int8_t> s(c, bufSize);
 			s = s.substr(startpos);
+			bufSize = s.length();
 			c = (int8_t*)s.c_str();
 		}
 		catch(std::out_of_range e)
@@ -359,6 +359,10 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_
 			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteChars\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
 			throw e;
 		}
+	}
+	if(len > bufSize)
+	{
+		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
 	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
@@ -385,9 +389,9 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64
 
 		try
 		{
-			bufSize -= startpos;
-			std::basic_string<uint8_t> s = c;
+			std::basic_string<uint8_t> s(c, bufSize);
 			s = s.substr(startpos);
+			bufSize = s.length();
 			c = (uint8_t*)s.c_str();
 		}
 		catch(std::out_of_range e)
@@ -395,6 +399,10 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64
 			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteBytes\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
 			throw e;
 		}
+	}
+	if(len > bufSize)
+	{
+		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
 	}
 	addBytes(len);
 	fwrite(c, 1, len, this->file);
