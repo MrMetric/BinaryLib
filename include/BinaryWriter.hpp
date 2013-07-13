@@ -47,8 +47,8 @@ class BinaryWriter
 		// 128-bit (16 bytes)
 		bool WriteFloat128(FLOAT16 value);
 
-		bool WriteChars(int8_t* c, uint64_t len, uint64_t startpos = 0);
-		bool WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos = 0);
+		bool WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
+		bool WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
 
 		bool WriteString(std::string s);
 

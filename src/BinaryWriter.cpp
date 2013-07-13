@@ -335,28 +335,28 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 }
 
 // This is faster than using WriteInt8 in a loop
-bool BinaryWriter::WriteChars(int8_t* c, uint64_t len, uint64_t startpos)
+bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
 
 	if(startpos != 0)
 	{
-		if(startpos == len)
+		if(startpos == bufSize)
 		{
-			std::cout << "BinaryWriter: Warning: startpos == len in WriteChars\n";
+			std::cout << "BinaryWriter: Warning: startpos == bufSize in WriteChars\n";
 			return true;
 		}
 
 		try
 		{
-			len -= startpos;
+			bufSize -= startpos;
 			std::basic_string<int8_t> s = c;
 			s = s.substr(startpos);
 			c = (int8_t*)s.c_str();
 		}
 		catch(std::out_of_range e)
 		{
-			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteChars\nlen: " << len << " (" << len + startpos << ")\nstartpos: " << startpos << "\n";
+			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteChars\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
 			throw e;
 		}
 	}
@@ -371,28 +371,28 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t len, uint64_t startpos)
 }
 
 // This is faster than using WriteUInt8 in a loop
-bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos)
+bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
 
 	if(startpos != 0)
 	{
-		if(startpos == len)
+		if(startpos == bufSize)
 		{
-			std::cout << "BinaryWriter: Warning: startpos == len in WriteBytes\n";
+			std::cout << "BinaryWriter: Warning: startpos == bufSize in WriteBytes\n";
 			return true;
 		}
 
 		try
 		{
-			len -= startpos;
+			bufSize -= startpos;
 			std::basic_string<uint8_t> s = c;
 			s = s.substr(startpos);
 			c = (uint8_t*)s.c_str();
 		}
 		catch(std::out_of_range e)
 		{
-			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteBytes\nlen: " << len << " (" << len + startpos << ")\nstartpos: " << startpos << "\n";
+			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteBytes\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
 			throw e;
 		}
 	}
@@ -408,7 +408,7 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t len, uint64_t startpos)
 
 bool BinaryWriter::WriteString(std::string s)
 {
-	return this->WriteChars((int8_t*)s.c_str(), s.length());
+	return this->WriteChars((int8_t*)s.c_str(), s.length(), s.length());
 }
 
 // TODO: check the return value of WriteUInt8
