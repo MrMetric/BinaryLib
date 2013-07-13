@@ -31,9 +31,11 @@ class BinaryReader
 		int64_t ReadInt64();
 		uint64_t ReadUInt64();
 
+		#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
 		// 128-bit (16 bytes)
 		__int128 ReadInt128();
 		unsigned __int128 ReadUInt128();
+		#endif
 
 		// 32-bit (4 bytes)
 		float ReadFloat32();

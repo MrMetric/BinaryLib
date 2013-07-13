@@ -132,6 +132,7 @@ uint64_t BinaryReader::ReadUInt64()
 	return *(reinterpret_cast<uint64_t*>(getBytes(8)));
 }
 
+#if defined(__GNUC__) && !defined(__MINGW32__)
 __int128 BinaryReader::ReadInt128()
 {
 	return *(reinterpret_cast<__int128*>(getBytes(16)));
@@ -141,6 +142,7 @@ unsigned __int128 BinaryReader::ReadUInt128()
 {
 	return *(reinterpret_cast<unsigned __int128*>(getBytes(16)));
 }
+#endif
 
 float BinaryReader::ReadFloat32()
 {

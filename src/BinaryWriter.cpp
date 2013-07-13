@@ -215,6 +215,7 @@ bool BinaryWriter::WriteUInt64(uint64_t i)
 	return true;
 }
 
+#if defined(__GNUC__) && !defined(__MINGW32__)
 bool BinaryWriter::WriteInt128(__int128 i)
 {
 	if(!this->isLoaded)
@@ -290,6 +291,7 @@ bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 	}
 	return true;
 }
+#endif
 
 bool BinaryWriter::WriteFloat32(float value)
 {
@@ -317,6 +319,7 @@ bool BinaryWriter::WriteFloat64(double value)
 
 bool BinaryWriter::WriteFloat128(FLOAT16 value)
 {
+	#if defined(__GNUC__) && !defined(__MINGW32__)
 	if(sizeof(FLOAT16) == 16)
 	{
 		return this->WriteInt128(*(__int128*)&value);
@@ -325,6 +328,9 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 	{
 		throw MAKESTR("BinaryWriter: long double size is " << sizeof(FLOAT16) << " (expected 16)");
 	}
+	#else
+	throw std::string("WriteFloat128 depends on the WriteInt128 function");
+	#endif
 }
 
 // This is faster than using WriteInt8 in a loop

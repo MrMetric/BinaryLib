@@ -33,9 +33,11 @@ class BinaryWriter
 		bool WriteInt64(int64_t i);
 		bool WriteUInt64(uint64_t i);
 
+		#if defined(__GNUC__) && !defined(__MINGW32__) // MinGW gives an error - does not appear to support __int128
 		// 128-bit (16 bytes)
 		bool WriteInt128(__int128 i);
 		bool WriteUInt128(unsigned __int128 i);
+		#endif
 
 		// 32-bit (4 bytes)
 		bool WriteFloat32(float value);

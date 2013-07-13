@@ -12,14 +12,14 @@ LD = g++
 WINDRES = windres
 
 INC = 
-CFLAGS = -std=c++11
+CFLAGS = 
 RESINC = 
 LIBDIR = 
 LIB = 
 LDFLAGS = 
 
 INC_DEBUG = $(INC)
-CFLAGS_DEBUG = $(CFLAGS) -Wall -g
+CFLAGS_DEBUG = $(CFLAGS) -std=c++11 -Wall -g
 RESINC_DEBUG = $(RESINC)
 RCFLAGS_DEBUG = $(RCFLAGS)
 LIBDIR_DEBUG = $(LIBDIR)
@@ -30,7 +30,7 @@ DEP_DEBUG =
 OUT_DEBUG = bin/Debug/libbinary.a
 
 INC_RELEASE = $(INC)
-CFLAGS_RELEASE = $(CFLAGS) -fomit-frame-pointer -Os -Wall
+CFLAGS_RELEASE = $(CFLAGS) -fomit-frame-pointer -Os -std=c++11 -Wall
 RESINC_RELEASE = $(RESINC)
 RCFLAGS_RELEASE = $(RCFLAGS)
 LIBDIR_RELEASE = $(LIBDIR)
@@ -44,9 +44,9 @@ OBJ_DEBUG = $(OBJDIR_DEBUG)/src/BinaryLibUtil.o $(OBJDIR_DEBUG)/src/BinaryReader
 
 OBJ_RELEASE = $(OBJDIR_RELEASE)/src/BinaryLibUtil.o $(OBJDIR_RELEASE)/src/BinaryReader.o $(OBJDIR_RELEASE)/src/BinaryWriter.o
 
-all: debug release
+all: debug release debug_w32 release_w32
 
-clean: clean_debug clean_release
+clean: clean_debug clean_release clean_debug_w32 clean_release_w32
 
 before_debug: 
 	test -d bin/Debug || mkdir -p bin/Debug
