@@ -2,8 +2,20 @@
 #include <stdio.h> // for file functions
 #include <sstream>
 #include <string.h> // for strerror and errno
+#include <iostream>
 
 #define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
+#define BYTESTOTYPE(type)\
+({\
+	uint8_t* buf = this->ReadBytes(sizeof(type));\
+	type ret = *(reinterpret_cast<type*>(buf));\
+	delete buf;\
+	ret;\
+})
+
+#ifdef __MINGW32__
+#define nullptr NULL
+#endif // __MINGW32__
 
 /**
 	BinaryReader.cpp
@@ -23,10 +35,17 @@
 /**
 	@arg		s The file to read
 */
-BinaryReader::BinaryReader(std::string s)
+BinaryReader::BinaryReader(std::string s) : isLoaded(false), data(nullptr), file(nullptr)
 {
-	this->isLoaded = false;
 	this->ChangeFile(s);
+}
+
+/**
+	@arg		data The byte array to read
+*/
+BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size) : isLoaded(false), data(nullptr), file(nullptr)
+{
+	this->ChangeFile(data, size);
 }
 
 /**
@@ -42,6 +61,7 @@ void BinaryReader::ChangeFile(std::string s)
 
 	this->fname = s;
 	this->pos = 0;
+	this->data = nullptr;
 	this->file = fopen(s.c_str(), "rb");
 	if(this->file == NULL || ferror(this->file))
 	{
@@ -55,38 +75,49 @@ void BinaryReader::ChangeFile(std::string s)
 		throw MAKESTR("BinaryWriter: Error getting file info: " << strerror(errno));
 	}
 	this->isLoaded = true;
+	this->usingArray = false;
+}
+
+/**
+	Close the current file, if one is loaded, and use a byte array
+	@arg		data The byte array to read
+*/
+void BinaryReader::ChangeFile(uint8_t* data, const uint_fast64_t size)
+{
+	if(this->isLoaded && !this->usingArray)
+	{
+		this->Close();
+	}
+
+	this->fname = "";
+	this->pos = 0;
+	this->file = nullptr;
+	this->data = data;
+	this->fSize = size;
+	this->isLoaded = true;
+	this->usingArray = true;
 }
 
 void BinaryReader::Close()
 {
-	fclose(this->file);
+	if(this->usingArray)
+	{
+		this->data = nullptr;
+	}
+	else
+	{
+		fclose(this->file);
+		this->file = nullptr;
+	}
 	this->isLoaded = false;
 }
 
-char* BinaryReader::getBytes(uint_fast32_t bytes)
+void ArrayCopy(const uint8_t* arrayIn, uint_fast32_t inStart, uint8_t* arrayOut, uint_fast32_t outStart, uint_fast32_t length)
 {
-	if(!this->isLoaded)
+	for(uint_fast32_t i = 0; i < length; ++i)
 	{
-		throw MAKESTR("Called getBytes(" << bytes << "), but no file is loaded");
+		arrayOut[outStart + i] = arrayIn[inStart + i];
 	}
-
-	// seek to the current position in the loaded file
-	fseek(this->file, this->pos, SEEK_SET);
-
-	// increment the current position for the next call to fseek
-	pos += bytes;
-
-	// make a char array and read data into it
-	char buf[bytes];
-	fread(buf, 1, bytes, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error reading file");
-	}
-
-	// get a pointer to the data and return it
-	char* ret = buf;
-	return ret;
 }
 
 bool BinaryReader::ReadBool()
@@ -96,53 +127,53 @@ bool BinaryReader::ReadBool()
 
 int8_t BinaryReader::ReadInt8()
 {
-	return *(reinterpret_cast<int8_t*>(getBytes(1)));
+	return BYTESTOTYPE(int8_t);
 }
 
 uint8_t BinaryReader::ReadUInt8()
 {
-	return *(reinterpret_cast<uint8_t*>(getBytes(1)));
+	return BYTESTOTYPE(uint8_t);
 }
 
 int16_t BinaryReader::ReadInt16()
 {
-	return *(reinterpret_cast<int16_t*>(getBytes(2)));
+	return BYTESTOTYPE(int16_t);
 }
 
 uint16_t BinaryReader::ReadUInt16()
 {
-	return *(reinterpret_cast<uint16_t*>(getBytes(2)));
+	return BYTESTOTYPE(uint16_t);
 }
 
 int32_t BinaryReader::ReadInt32()
 {
-	return *(reinterpret_cast<int32_t*>(getBytes(4)));
+	return BYTESTOTYPE(int32_t);
 }
 
 uint32_t BinaryReader::ReadUInt32()
 {
-	return *(reinterpret_cast<uint32_t*>(getBytes(4)));
+	return BYTESTOTYPE(uint32_t);
 }
 
 int64_t BinaryReader::ReadInt64()
 {
-	return *(reinterpret_cast<int64_t*>(getBytes(8)));
+	return BYTESTOTYPE(int64_t);
 }
 
 uint64_t BinaryReader::ReadUInt64()
 {
-	return *(reinterpret_cast<uint64_t*>(getBytes(8)));
+	return BYTESTOTYPE(uint64_t);
 }
 
 #if defined(__GNUC__) && !defined(__MINGW32__)
 __int128 BinaryReader::ReadInt128()
 {
-	return *(reinterpret_cast<__int128*>(getBytes(16)));
+	return BYTESTOTYPE(__int128);
 }
 
 unsigned __int128 BinaryReader::ReadUInt128()
 {
-	return *(reinterpret_cast<unsigned __int128*>(getBytes(16)));
+	return BYTESTOTYPE(unsigned __int128);
 }
 #endif
 
@@ -150,7 +181,7 @@ float BinaryReader::ReadFloat32()
 {
 	if(sizeof(float) == 4)
 	{
-		return *(reinterpret_cast<float*>(getBytes(4)));
+		return BYTESTOTYPE(float);
 	}
 	else
 	{
@@ -162,7 +193,7 @@ double BinaryReader::ReadFloat64()
 {
 	if(sizeof(double) == 8)
 	{
-		return *(reinterpret_cast<double*>(getBytes(8)));
+		return BYTESTOTYPE(double);
 	}
 	else
 	{
@@ -174,41 +205,12 @@ long double BinaryReader::ReadFloat128()
 {
 	if(sizeof(long double) == 16)
 	{
-		return *(reinterpret_cast<long double*>(getBytes(16)));
+		return BYTESTOTYPE(long double);
 	}
 	else
 	{
 		throw MAKESTR("long double size is " << sizeof(long double) << " (expected 16)");
 	}
-}
-
-std::string BinaryReader::ReadString(uint_fast64_t length)
-{
-	if(!this->isLoaded)
-	{
-		throw MAKESTR("Called ReadString(" << length << "), but no file is loaded");
-	}
-
-	// seek to the current position in the loaded file
-	fseek(this->file, this->pos, SEEK_SET);
-
-	// increment the current position for the next call to fseek
-	pos += length;
-
-	// make a char array and read data into it
-	char buf[length];
-	fread(buf, 1, length, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error reading file");
-	}
-
-	std::string s(buf, length);
-	if(s.length() > length)
-	{
-		s = s.substr(0, length);
-	}
-	return s;
 }
 
 // TODO: check accuracy
@@ -227,6 +229,76 @@ std::string BinaryReader::ReadString(uint_fast64_t length)
 	return ret;
 }*/
 
+char* BinaryReader::ReadChars(uint_fast64_t bytes)
+{
+	if(!this->isLoaded)
+	{
+		throw MAKESTR("Called ReadChars(" << bytes << "), but no file is loaded");
+	}
+
+	char* buf = new char[bytes];
+
+	if(this->usingArray)
+	{
+		for(uint_fast32_t i = 0; i < bytes; ++i)
+		{
+			buf[i] = this->data[this->pos + i];
+		}
+	}
+	else
+	{
+		// seek to the current position in the loaded file
+		fseek(this->file, this->pos, SEEK_SET);
+		fread(buf, 1, bytes, this->file);
+		if(ferror(this->file))
+		{
+			throw MAKESTR("Error reading file: " << strerror(errno));
+		}
+	}
+
+	// increment the current position
+	this->pos += bytes;
+
+	return buf;
+}
+
+uint8_t* BinaryReader::ReadBytes(uint_fast64_t bytes)
+{
+	if(!this->isLoaded)
+	{
+		throw MAKESTR("Called ReadBytes(" << bytes << "), but no file is loaded");
+	}
+
+	uint8_t* buf = new uint8_t[bytes];
+
+	if(this->usingArray)
+	{
+		ArrayCopy(this->data, this->pos, buf, 0, bytes);
+	}
+	else
+	{
+		// seek to the current position in the loaded file
+		fseek(this->file, this->pos, SEEK_SET);
+		fread(buf, 1, bytes, this->file);
+		if(ferror(this->file))
+		{
+			throw MAKESTR("Error reading file: " << strerror(errno));
+		}
+	}
+
+	// increment the current position
+	this->pos += bytes;
+
+	return buf;
+}
+
+std::string BinaryReader::ReadString(uint_fast64_t length)
+{
+	char* buf = this->ReadChars(length);
+	std::string ret(buf, length);
+	delete buf;
+	return ret;
+}
 
 // Derived from http://www.terrariaonline.com/threads/86509/
 uint64_t BinaryReader::Read7BitEncodedInt()

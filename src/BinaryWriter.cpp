@@ -334,7 +334,7 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 }
 
 // This is faster than using WriteInt8 in a loop
-bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
+bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
 
@@ -348,10 +348,10 @@ bool BinaryWriter::WriteChars(int8_t* c, uint64_t bufSize, uint64_t len, uint64_
 
 		try
 		{
-			std::basic_string<int8_t> s(c, bufSize);
+			std::string s(c, bufSize);
 			s = s.substr(startpos);
 			bufSize = s.length();
-			c = (int8_t*)s.c_str();
+			c = s.c_str();
 		}
 		catch(std::out_of_range e)
 		{
@@ -415,7 +415,7 @@ bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64
 
 bool BinaryWriter::WriteString(std::string s)
 {
-	return this->WriteChars((int8_t*)s.c_str(), s.length(), s.length());
+	return this->WriteChars(s.c_str(), s.length(), s.length());
 }
 
 // TODO: check the return value of WriteUInt8

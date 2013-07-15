@@ -8,9 +8,10 @@ class BinaryReader
 {
 	public:
 		BinaryReader(std::string s);
+		BinaryReader(uint8_t* data, const uint_fast64_t size);
 		void ChangeFile(std::string s);
+		void ChangeFile(uint8_t* data, const uint_fast64_t size);
 		void Close();
-		char* getBytes(uint_fast32_t bytes);
 
 		// 8-bit (1 byte)
 		bool ReadBool();
@@ -46,6 +47,9 @@ class BinaryReader
 		// 128-bit (16 bytes)
 		long double ReadFloat128();
 
+		char* ReadChars(uint_fast64_t bytes);
+		uint8_t* ReadBytes(uint_fast64_t bytes);
+
 		std::string ReadString(uint_fast64_t length);
 
 		//uint32_t Read7BitEncodedInt(uint8_t b);
@@ -53,9 +57,11 @@ class BinaryReader
 		std::string ReadStringMS();
 
 		bool isLoaded;
+		bool usingArray;
+		uint8_t* data;
 		std::string fname;
 		uint_fast64_t pos;
-		FILE *file;
+		FILE* file;
 		uint_fast64_t fSize;
 };
 
