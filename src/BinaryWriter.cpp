@@ -35,10 +35,10 @@ BinaryWriter::BinaryWriter(std::string s, bool bak)
 			BinaryLibUtil::fileDelete(s.c_str());
 		}
 	}
-	this->file = fopen(s.c_str(), "ar+b");
+	this->file = fopen(s.c_str(), "wb");
 	if(this->file == NULL || ferror(this->file))
 	{
-		throw MAKESTR("BinaryWriter: Error opening file: " << strerror(errno));
+		throw MAKESTR("BinaryWriter: Error opening \"" << s << "\": " << strerror(errno));
 	}
 	else
 	{
@@ -215,7 +215,7 @@ bool BinaryWriter::WriteUInt64(uint64_t i)
 	return true;
 }
 
-#if defined(__GNUC__) && !defined(__MINGW32__)
+#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
 bool BinaryWriter::WriteInt128(__int128 i)
 {
 	if(!this->isLoaded)
@@ -319,7 +319,7 @@ bool BinaryWriter::WriteFloat64(double value)
 
 bool BinaryWriter::WriteFloat128(FLOAT16 value)
 {
-	#if defined(__GNUC__) && !defined(__MINGW32__)
+	#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
 	if(sizeof(FLOAT16) == 16)
 	{
 		return this->WriteInt128(*(__int128*)&value);
@@ -374,7 +374,7 @@ bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize, uint64_t len, uin
 }
 
 // This is faster than using WriteUInt8 in a loop
-bool BinaryWriter::WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
+bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
 {
 	if(!this->isLoaded) return false;
 

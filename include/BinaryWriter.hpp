@@ -33,7 +33,7 @@ class BinaryWriter
 		bool WriteInt64(int64_t i);
 		bool WriteUInt64(uint64_t i);
 
-		#if defined(__GNUC__) && !defined(__MINGW32__) // MinGW gives an error - does not appear to support __int128
+		#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
 		// 128-bit (16 bytes)
 		bool WriteInt128(__int128 i);
 		bool WriteUInt128(unsigned __int128 i);
@@ -49,7 +49,7 @@ class BinaryWriter
 		bool WriteFloat128(FLOAT16 value);
 
 		bool WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
-		bool WriteBytes(uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
+		bool WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
 
 		bool WriteString(std::string s);
 

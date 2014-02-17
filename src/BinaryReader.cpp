@@ -13,9 +13,23 @@
 	ret;\
 })
 
-#ifdef __MINGW32__
-#define nullptr NULL
-#endif // __MINGW32__
+#if (__cplusplus != 201103L) && !defined(NULLPTR_EMU)
+#define NULLPTR_EMU
+// From http://stackoverflow.com/a/2419885
+const								// this is a const object...
+class
+{
+	public:
+		template<class T>			// convertible to any type
+			operator T*() const		// of null non-member
+			{ return 0; }			// pointer...
+		template<class C, class T>	// or any type of null
+			operator T C::*() const	// member pointer...
+			{ return 0; }
+	private:
+		void operator&() const;		// whose address can't be taken
+} nullptr = {};						// and whose name is nullptr
+#endif
 
 /**
 	BinaryReader.cpp
@@ -23,7 +37,7 @@
 	It reads bytes from a file and returns the following:
 	 - signed and unsigned integer values (8-bit, 16-bit, 32-bit, 64-bit, or 128-bit)
 	 - single characters (8-bit int) or strings of characters (in std::string)
-	It can read Microsoft-style strings (one byte before the string specifies the length)
+	It can read strings that have their length specified by a 7-bit encoded int
 
 	Thanks to Matt Davis for the reinterpret_cast usage
 		http://stackoverflow.com/a/545020/1578318
@@ -42,6 +56,7 @@ BinaryReader::BinaryReader(std::string s) : isLoaded(false), data(nullptr), file
 
 /**
 	@arg		data The byte array to read
+	@arg		size The size (in bytes) of the byte array
 */
 BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size) : isLoaded(false), data(nullptr), file(nullptr)
 {
@@ -65,7 +80,7 @@ void BinaryReader::ChangeFile(std::string s)
 	this->file = fopen(s.c_str(), "rb");
 	if(this->file == NULL || ferror(this->file))
 	{
-		throw MAKESTR("BinaryReader: Error opening file: " << strerror(errno));
+		throw MAKESTR("BinaryReader: Error opening \"" << s << "\": " << strerror(errno));
 	}
 	fseek(file, 0, SEEK_END);
 	this->fSize = ftell(file);
@@ -112,6 +127,14 @@ void BinaryReader::Close()
 	this->isLoaded = false;
 }
 
+/**
+	Copy an array
+	@arg		arrayIn		The array to read
+	@arg		inStart		The index to start reading bytes from
+	@arg		arrayOut	The read bytes are copied into this array
+	@arg		outStart	Byte insertion starts at this index
+	@arg		length		How many bytes to copy
+*/
 void ArrayCopy(const uint8_t* arrayIn, uint_fast32_t inStart, uint8_t* arrayOut, uint_fast32_t outStart, uint_fast32_t length)
 {
 	for(uint_fast32_t i = 0; i < length; ++i)
@@ -120,63 +143,99 @@ void ArrayCopy(const uint8_t* arrayIn, uint_fast32_t inStart, uint8_t* arrayOut,
 	}
 }
 
+/**
+	Read 1 byte as a boolean value. 0 is false, everything else is true.
+*/
 bool BinaryReader::ReadBool()
 {
 	return (ReadUInt8() != 0);
 }
 
+/**
+	Read 1 byte as a signed 8-bit integer
+*/
 int8_t BinaryReader::ReadInt8()
 {
 	return BYTESTOTYPE(int8_t);
 }
 
+/**
+	Read 1 byte as an unsigned 8-bit integer
+*/
 uint8_t BinaryReader::ReadUInt8()
 {
 	return BYTESTOTYPE(uint8_t);
 }
 
+/**
+	Read 2 bytes as a signed 16-bit integer
+*/
 int16_t BinaryReader::ReadInt16()
 {
 	return BYTESTOTYPE(int16_t);
 }
 
+/**
+	Read 2 bytes as an unsigned 16-bit integer
+*/
 uint16_t BinaryReader::ReadUInt16()
 {
 	return BYTESTOTYPE(uint16_t);
 }
 
+/**
+	Read 4 bytes as a signed 32-bit integer
+*/
 int32_t BinaryReader::ReadInt32()
 {
 	return BYTESTOTYPE(int32_t);
 }
 
+/**
+	Read 4 bytes as an unsigned 32-bit integer
+*/
 uint32_t BinaryReader::ReadUInt32()
 {
 	return BYTESTOTYPE(uint32_t);
 }
 
+/**
+	Read 8 bytes as a signed 64-bit integer
+*/
 int64_t BinaryReader::ReadInt64()
 {
 	return BYTESTOTYPE(int64_t);
 }
 
+/**
+	Read 8 bytes as an unsigned 64-bit integer
+*/
 uint64_t BinaryReader::ReadUInt64()
 {
 	return BYTESTOTYPE(uint64_t);
 }
 
-#if defined(__GNUC__) && !defined(__MINGW32__)
+#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
+/**
+	Read 16 bytes as a signed 128-bit integer
+*/
 __int128 BinaryReader::ReadInt128()
 {
 	return BYTESTOTYPE(__int128);
 }
 
+/**
+	Read 16 bytes as an unsigned 128-bit integer
+*/
 unsigned __int128 BinaryReader::ReadUInt128()
 {
 	return BYTESTOTYPE(unsigned __int128);
 }
 #endif
 
+/**
+	Read 4 bytes as a 32-bit floating-point number
+*/
 float BinaryReader::ReadFloat32()
 {
 	if(sizeof(float) == 4)
@@ -189,6 +248,9 @@ float BinaryReader::ReadFloat32()
 	}
 }
 
+/**
+	Read 8 bytes as a 64-bit floating-point number
+*/
 double BinaryReader::ReadFloat64()
 {
 	if(sizeof(double) == 8)
@@ -201,6 +263,9 @@ double BinaryReader::ReadFloat64()
 	}
 }
 
+/**
+	Read 16 bytes as a 128-bit floating-point number
+*/
 long double BinaryReader::ReadFloat128()
 {
 	if(sizeof(long double) == 16)
@@ -316,7 +381,7 @@ uint64_t BinaryReader::Read7BitEncodedInt()
 			return ret;
 		}
 	}
-	throw std::string("Failed to read a Microsoft 7-bit encoded integer");
+	throw std::string("Failed to read a 7-bit encoded integer");
 }
 
 std::string BinaryReader::ReadStringMS()
