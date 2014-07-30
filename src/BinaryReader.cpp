@@ -317,6 +317,7 @@ char* BinaryReader::ReadChars(uint_fast64_t bytes)
 		fread(buf, 1, bytes, this->file);
 		if(ferror(this->file))
 		{
+			delete[] buf;
 			throw MAKESTR("Error reading file: " << strerror(errno));
 		}
 	}
