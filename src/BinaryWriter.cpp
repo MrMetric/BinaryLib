@@ -297,7 +297,11 @@ bool BinaryWriter::WriteFloat32(float value)
 {
 	if(sizeof(float) == 4)
 	{
-		return this->WriteInt32(*(int32_t*)&value);
+		// warning: dereferencing type-punned pointer will break strict-aliasing rules
+		//return this->WriteInt32(*(int32_t*)&value);
+
+		// no warning
+		return this->WriteChars((char*)&value, 4, 4);
 	}
 	else
 	{
@@ -309,7 +313,11 @@ bool BinaryWriter::WriteFloat64(double value)
 {
 	if(sizeof(double) == 8)
 	{
-		return this->WriteInt64(*(int64_t*)&value);
+		// warning: dereferencing type-punned pointer will break strict-aliasing rules
+		//return this->WriteInt64(*(int64_t*)&value);
+
+		// no warning
+		return this->WriteChars((char*)&value, 8, 8);
 	}
 	else
 	{
@@ -322,7 +330,11 @@ bool BinaryWriter::WriteFloat128(FLOAT16 value)
 	#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
 	if(sizeof(FLOAT16) == 16)
 	{
-		return this->WriteInt128(*(__int128*)&value);
+		// warning: dereferencing type-punned pointer will break strict-aliasing rules
+		//return this->WriteInt128(*(__int128*)&value);
+
+		// no warning
+		return this->WriteChars((char*)&value, 16, 16);
 	}
 	else
 	{

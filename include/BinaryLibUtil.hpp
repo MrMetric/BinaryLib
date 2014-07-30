@@ -1,7 +1,6 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#include <stdint.h>
 #include <string.h> // for strerror and errno
 #include <fstream> // for std::ifstream, remove, and rename
 #include <iostream> // for std::cerr
