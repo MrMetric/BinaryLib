@@ -8,11 +8,14 @@
 class BinaryReader
 {
 	public:
-		explicit BinaryReader(std::string s);
+		explicit BinaryReader(const std::string& s);
 		BinaryReader(uint8_t* data, const uint_fast64_t size);
-		void ChangeFile(std::string s);
+
+		void ChangeFile(const std::string& s);
 		void ChangeFile(uint8_t* data, const uint_fast64_t size);
 		void Close();
+
+		template <class type> type bytes_to_type();
 
 		bool ReadBool();
 

@@ -6,13 +6,14 @@
 #include <algorithm> // std::copy_n
 
 #define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
-#define BYTESTOTYPE(type)\
-({\
-	uint8_t* buf = this->ReadBytes(sizeof(type));\
-	type ret = *(reinterpret_cast<type*>(buf));\
-	delete[] buf;\
-	ret;\
-})
+
+template <class type> type BinaryReader::bytes_to_type()
+{
+	uint8_t* buf = this->ReadBytes(sizeof(type));
+	type ret = *(reinterpret_cast<type*>(buf));
+	delete[] buf;
+	return ret;
+}
 
 /**
 	BinaryReader.cpp
@@ -32,7 +33,7 @@
 /**
 	@arg		s The file to read
 */
-BinaryReader::BinaryReader(std::string s) : isLoaded(false), data(nullptr), file(nullptr)
+BinaryReader::BinaryReader(const std::string& s) : isLoaded(false), data(nullptr), file(nullptr)
 {
 	this->ChangeFile(s);
 }
@@ -50,7 +51,7 @@ BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size) : isLoaded(f
 	Close the current file, if one is loaded, and open a file
 	@arg		s The file to read
 */
-void BinaryReader::ChangeFile(std::string s)
+void BinaryReader::ChangeFile(const std::string& s)
 {
 	if(this->isLoaded)
 	{
@@ -128,7 +129,7 @@ bool BinaryReader::ReadBool()
 */
 int8_t BinaryReader::ReadInt8()
 {
-	return BYTESTOTYPE(int8_t);
+	return this->bytes_to_type<int8_t>();
 }
 
 /**
@@ -136,7 +137,7 @@ int8_t BinaryReader::ReadInt8()
 */
 uint8_t BinaryReader::ReadUInt8()
 {
-	return BYTESTOTYPE(uint8_t);
+	return this->bytes_to_type<uint8_t>();
 }
 
 /**
@@ -144,7 +145,7 @@ uint8_t BinaryReader::ReadUInt8()
 */
 int16_t BinaryReader::ReadInt16()
 {
-	return BYTESTOTYPE(int16_t);
+	return this->bytes_to_type<int16_t>();
 }
 
 /**
@@ -152,7 +153,7 @@ int16_t BinaryReader::ReadInt16()
 */
 uint16_t BinaryReader::ReadUInt16()
 {
-	return BYTESTOTYPE(uint16_t);
+	return this->bytes_to_type<uint16_t>();
 }
 
 /**
@@ -160,7 +161,7 @@ uint16_t BinaryReader::ReadUInt16()
 */
 int32_t BinaryReader::ReadInt32()
 {
-	return BYTESTOTYPE(int32_t);
+	return this->bytes_to_type<int32_t>();
 }
 
 /**
@@ -168,7 +169,7 @@ int32_t BinaryReader::ReadInt32()
 */
 uint32_t BinaryReader::ReadUInt32()
 {
-	return BYTESTOTYPE(uint32_t);
+	return this->bytes_to_type<uint32_t>();
 }
 
 /**
@@ -176,7 +177,7 @@ uint32_t BinaryReader::ReadUInt32()
 */
 int64_t BinaryReader::ReadInt64()
 {
-	return BYTESTOTYPE(int64_t);
+	return this->bytes_to_type<int64_t>();
 }
 
 /**
@@ -184,7 +185,7 @@ int64_t BinaryReader::ReadInt64()
 */
 uint64_t BinaryReader::ReadUInt64()
 {
-	return BYTESTOTYPE(uint64_t);
+	return this->bytes_to_type<uint64_t>();
 }
 
 #if __SIZEOF_INT128__ == 16
@@ -193,7 +194,7 @@ uint64_t BinaryReader::ReadUInt64()
 */
 __int128 BinaryReader::ReadInt128()
 {
-	return BYTESTOTYPE(__int128);
+	return this->bytes_to_type<__int128>();
 }
 
 /**
@@ -201,7 +202,7 @@ __int128 BinaryReader::ReadInt128()
 */
 unsigned __int128 BinaryReader::ReadUInt128()
 {
-	return BYTESTOTYPE(unsigned __int128);
+	return this->bytes_to_type<unsigned __int128>();
 }
 #endif
 
@@ -212,7 +213,7 @@ float BinaryReader::ReadFloat32()
 {
 	if(sizeof(float) == 4)
 	{
-		return BYTESTOTYPE(float);
+		return this->bytes_to_type<float>();
 	}
 	else
 	{
@@ -227,7 +228,7 @@ double BinaryReader::ReadFloat64()
 {
 	if(sizeof(double) == 8)
 	{
-		return BYTESTOTYPE(double);
+		return this->bytes_to_type<double>();
 	}
 	else
 	{
@@ -240,9 +241,9 @@ double BinaryReader::ReadFloat64()
 */
 long double BinaryReader::ReadFloat128()
 {
-	if(sizeof(long double) == 16)
+	if(sizeof(FLOAT16) == 16)
 	{
-		return BYTESTOTYPE(long double);
+		return this->bytes_to_type<FLOAT16>();
 	}
 	else
 	{
