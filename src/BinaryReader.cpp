@@ -3,33 +3,16 @@
 #include <sstream>
 #include <string.h> // for strerror and errno
 #include <iostream>
+#include <algorithm> // std::copy_n
 
 #define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
 #define BYTESTOTYPE(type)\
 ({\
 	uint8_t* buf = this->ReadBytes(sizeof(type));\
 	type ret = *(reinterpret_cast<type*>(buf));\
-	delete buf;\
+	delete[] buf;\
 	ret;\
 })
-
-#if (__cplusplus != 201103L) && !defined(NULLPTR_EMU)
-#define NULLPTR_EMU
-// From http://stackoverflow.com/a/2419885
-const								// this is a const object...
-class
-{
-	public:
-		template<class T>			// convertible to any type
-			operator T*() const		// of null non-member
-			{ return 0; }			// pointer...
-		template<class C, class T>	// or any type of null
-			operator T C::*() const	// member pointer...
-			{ return 0; }
-	private:
-		void operator&() const;		// whose address can't be taken
-} nullptr = {};						// and whose name is nullptr
-#endif
 
 /**
 	BinaryReader.cpp
@@ -78,7 +61,7 @@ void BinaryReader::ChangeFile(std::string s)
 	this->pos = 0;
 	this->data = nullptr;
 	this->file = fopen(s.c_str(), "rb");
-	if(this->file == NULL || ferror(this->file))
+	if(this->file == nullptr || ferror(this->file))
 	{
 		throw MAKESTR("BinaryReader: Error opening \"" << s << "\": " << strerror(errno));
 	}
@@ -115,6 +98,11 @@ void BinaryReader::ChangeFile(uint8_t* data, const uint_fast64_t size)
 
 void BinaryReader::Close()
 {
+	if(!this->isLoaded)
+	{
+		return;
+	}
+
 	if(this->usingArray)
 	{
 		this->data = nullptr;
@@ -125,22 +113,6 @@ void BinaryReader::Close()
 		this->file = nullptr;
 	}
 	this->isLoaded = false;
-}
-
-/**
-	Copy an array
-	@arg		arrayIn		The array to read
-	@arg		inStart		The index to start reading bytes from
-	@arg		arrayOut	The read bytes are copied into this array
-	@arg		outStart	Byte insertion starts at this index
-	@arg		length		How many bytes to copy
-*/
-void ArrayCopy(const uint8_t* arrayIn, uint_fast32_t inStart, uint8_t* arrayOut, uint_fast32_t outStart, uint_fast32_t length)
-{
-	for(uint_fast32_t i = 0; i < length; ++i)
-	{
-		arrayOut[outStart + i] = arrayIn[inStart + i];
-	}
 }
 
 /**
@@ -215,7 +187,7 @@ uint64_t BinaryReader::ReadUInt64()
 	return BYTESTOTYPE(uint64_t);
 }
 
-#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
+#if __SIZEOF_INT128__ == 16
 /**
 	Read 16 bytes as a signed 128-bit integer
 */
@@ -307,12 +279,12 @@ char* BinaryReader::ReadChars(uint_fast64_t bytes)
 	{
 		for(uint_fast32_t i = 0; i < bytes; ++i)
 		{
-			buf[i] = this->data[this->pos + i];
+			uint8_t byte = this->data[this->pos + i];
+			buf[i] = *reinterpret_cast<char*>(&byte);
 		}
 	}
 	else
 	{
-		// seek to the current position in the loaded file
 		fseek(this->file, this->pos, SEEK_SET);
 		fread(buf, 1, bytes, this->file);
 		if(ferror(this->file))
@@ -322,7 +294,6 @@ char* BinaryReader::ReadChars(uint_fast64_t bytes)
 		}
 	}
 
-	// increment the current position
 	this->pos += bytes;
 
 	return buf;
@@ -339,11 +310,10 @@ uint8_t* BinaryReader::ReadBytes(uint_fast64_t bytes)
 
 	if(this->usingArray)
 	{
-		ArrayCopy(this->data, this->pos, buf, 0, bytes);
+		std::copy_n(this->data + this->pos, bytes, buf);
 	}
 	else
 	{
-		// seek to the current position in the loaded file
 		fseek(this->file, this->pos, SEEK_SET);
 		fread(buf, 1, bytes, this->file);
 		if(ferror(this->file))
@@ -352,7 +322,6 @@ uint8_t* BinaryReader::ReadBytes(uint_fast64_t bytes)
 		}
 	}
 
-	// increment the current position
 	this->pos += bytes;
 
 	return buf;
@@ -362,7 +331,7 @@ std::string BinaryReader::ReadString(uint_fast64_t length)
 {
 	char* buf = this->ReadChars(length);
 	std::string ret(buf, length);
-	delete buf;
+	delete[] buf;
 	return ret;
 }
 
@@ -387,6 +356,6 @@ uint64_t BinaryReader::Read7BitEncodedInt()
 
 std::string BinaryReader::ReadStringMS()
 {
-	int len = this->Read7BitEncodedInt();
+	auto len = this->Read7BitEncodedInt();
 	return this->ReadString(len);
 }
