@@ -12,14 +12,18 @@
 				<Option working_dir="" />
 				<Option object_output="obj/Debug/" />
 				<Option type="2" />
-				<Option compiler="gcc" />
+				<Option compiler="clang" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-std=c++11" />
-					<Add option="-Wextra" />
+					<Add option="-ftrapv" />
+					<Add option="-Weverything" />
 					<Add option="-Wall" />
 					<Add option="-g" />
+					<Add option="-fsanitize=undefined" />
 				</Compiler>
+				<Linker>
+					<Add option="-lubsan" />
+				</Linker>
 			</Target>
 			<Target title="Release">
 				<Option platforms="Unix;" />
@@ -31,8 +35,7 @@
 				<Option createDefFile="1" />
 				<Compiler>
 					<Add option="-fomit-frame-pointer" />
-					<Add option="-Os" />
-					<Add option="-std=c++11" />
+					<Add option="-O2" />
 					<Add option="-Wextra" />
 					<Add option="-Wall" />
 				</Compiler>
@@ -73,6 +76,10 @@
 				</Linker>
 			</Target>
 		</Build>
+		<Compiler>
+			<Add option="-std=c++14" />
+			<Add option="-pedantic" />
+		</Compiler>
 		<Unit filename="include/BinaryLibUtil.hpp" />
 		<Unit filename="include/BinaryReader.hpp" />
 		<Unit filename="include/BinaryWriter.hpp" />
