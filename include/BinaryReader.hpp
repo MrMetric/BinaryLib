@@ -10,6 +10,7 @@ class BinaryReader
 	public:
 		explicit BinaryReader(const std::string& s);
 		BinaryReader(uint8_t* data, const uint_fast64_t size);
+		~BinaryReader();
 
 		void ChangeFile(const std::string& s);
 		void ChangeFile(uint8_t* data, const uint_fast64_t size);
@@ -50,11 +51,11 @@ class BinaryReader
 		uint64_t Read7BitEncodedInt();
 		std::string ReadStringMS();
 
-		bool isLoaded;
+		bool isLoaded = false;
 		bool usingArray;
-		uint8_t* data;
+		uint8_t* data = nullptr;
 		std::string fname;
 		uint_fast64_t pos;
-		FILE* file;
+		FILE* file = nullptr;
 		uint_fast64_t fSize;
 };

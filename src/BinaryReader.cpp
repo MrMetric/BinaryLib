@@ -33,7 +33,7 @@ template <class type> type BinaryReader::bytes_to_type()
 /**
 	@arg		s The file to read
 */
-BinaryReader::BinaryReader(const std::string& s) : isLoaded(false), data(nullptr), file(nullptr)
+BinaryReader::BinaryReader(const std::string& s)
 {
 	this->ChangeFile(s);
 }
@@ -42,9 +42,17 @@ BinaryReader::BinaryReader(const std::string& s) : isLoaded(false), data(nullptr
 	@arg		data The byte array to read
 	@arg		size The size (in bytes) of the byte array
 */
-BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size) : isLoaded(false), data(nullptr), file(nullptr)
+BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size)
 {
 	this->ChangeFile(data, size);
+}
+
+BinaryReader::~BinaryReader()
+{
+	if(this->isLoaded)
+	{
+		this->Close();
+	}
 }
 
 /**
