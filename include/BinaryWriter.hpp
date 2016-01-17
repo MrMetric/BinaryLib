@@ -1,8 +1,8 @@
-#ifndef BINARYWRITER_H
-#define BINARYWRITER_H
+#pragma once
 
-#include <stdint.h>
-#include "BinaryLibUtil.hpp" // for Util functions and the file functions in stdio.h (included in fstream)
+#include "BinaryLibUtil.hpp"
+
+#include <cstdint>
 
 class BinaryWriter
 {
@@ -24,7 +24,7 @@ class BinaryWriter
 		bool WriteInt64(int64_t i);
 		bool WriteUInt64(uint64_t i);
 
-		#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
+		#if __SIZEOF_INT128__ == 16
 		bool WriteInt128(__int128 i);
 		bool WriteUInt128(unsigned __int128 i);
 		#endif
@@ -43,8 +43,6 @@ class BinaryWriter
 
 		bool isLoaded;
 		std::string fname;
-		FILE *file;
+		FILE* file;
 		uint_fast32_t totalBytes;
 };
-
-#endif // BINARYWRITER_H

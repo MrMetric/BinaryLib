@@ -1,13 +1,14 @@
-#ifndef BINARYREADER_H
-#define BINARYREADER_H
+#pragma once
 
-#include <stdint.h>
-#include <string> // for std::string
+#include "BinaryLibUtil.hpp"
+
+#include <cstdint>
+#include <string>
 
 class BinaryReader
 {
 	public:
-		BinaryReader(std::string s);
+		explicit BinaryReader(std::string s);
 		BinaryReader(uint8_t* data, const uint_fast64_t size);
 		void ChangeFile(std::string s);
 		void ChangeFile(uint8_t* data, const uint_fast64_t size);
@@ -27,7 +28,7 @@ class BinaryReader
 		int64_t ReadInt64();
 		uint64_t ReadUInt64();
 
-		#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
+		#if __SIZEOF_INT128__ == 16
 		__int128 ReadInt128();
 		unsigned __int128 ReadUInt128();
 		#endif
@@ -54,5 +55,3 @@ class BinaryReader
 		FILE* file;
 		uint_fast64_t fSize;
 };
-
-#endif // BINARYREADER_H
