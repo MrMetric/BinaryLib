@@ -1,6 +1,7 @@
-# Automatically created by Code::Blocks
-BinaryLib.depend
-BinaryLib.layout
+# automatically created by Code::Blocks
+*.depend
+*.layout
 
-# Compiled object files go in this directory
+# compiled stuff
 obj
+bin
