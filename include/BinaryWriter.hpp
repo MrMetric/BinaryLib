@@ -3,12 +3,13 @@
 #include "BinaryLibUtil.hpp"
 
 #include <cstdint>
+#include <vector>
 
 class BinaryWriter
 {
 	public:
-		BinaryWriter(std::string s, bool bak = true);
-		void Close();
+		BinaryWriter(const std::string& filename, bool bak = false);
+		~BinaryWriter();
 
 		bool WriteBool(bool b);
 
@@ -33,16 +34,21 @@ class BinaryWriter
 		bool WriteFloat64(double value);
 		bool WriteFloat128(FLOAT16 value);
 
+		bool WriteChars(const char* c, uint64_t bufSize);
 		bool WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
+		bool WriteBytes(const uint8_t* c, uint64_t bufSize);
 		bool WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
+		bool WriteBytes(const std::vector<uint8_t>& bytes);
 
 		bool WriteString(std::string s);
 
-		void Write7BitEncodedInt(uint64_t value);
+		bool Write7BitEncodedInt(uint64_t value);
 		bool WriteStringMS(std::string s);
 
-		bool isLoaded;
-		std::string fname;
-		FILE* file;
-		uint_fast32_t totalBytes;
+	private:
+		template <class type>
+		bool type_to_bytes(type value);
+
+		std::string filename;
+		FILE* file = nullptr;
 };

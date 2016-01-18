@@ -4,7 +4,7 @@
 #include <fstream> // for std::ifstream, remove, and rename
 #include <iostream> // for std::cerr
 
-#define BINARYLIB_VERSION 10
+#define BINARYLIB_VERSION 11
 
 #define FLOAT16 long double
 

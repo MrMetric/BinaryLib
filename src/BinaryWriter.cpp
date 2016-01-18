@@ -18,405 +18,152 @@
 				specified in the previous argument will have .bak appended to its name
 */
 
-BinaryWriter::BinaryWriter(std::string s, bool bak)
+BinaryWriter::BinaryWriter(const std::string& filename, bool bak)
+	:
+	filename(filename)
 {
-	this->isLoaded = false;
-	this->fname = s;
-	this->totalBytes = 0;
-	if(BinaryLibUtil::fileExists(s.c_str()))
+	if(BinaryLibUtil::fileExists(filename.c_str()))
 	{
 		if(bak)
 		{
-			std::string s_bak = s + std::string(".bak");
-			BinaryLibUtil::moveFile(s.c_str(), s_bak.c_str(), true);
+			std::string s_bak = filename + std::string(".bak");
+			BinaryLibUtil::moveFile(filename.c_str(), s_bak.c_str(), true);
 		}
 		else
 		{
-			BinaryLibUtil::fileDelete(s.c_str());
+			BinaryLibUtil::fileDelete(filename.c_str());
 		}
 	}
-	this->file = fopen(s.c_str(), "wb");
-	if(this->file == NULL || ferror(this->file))
+	this->file = fopen(filename.c_str(), "wb");
+	if(this->file == nullptr || ferror(this->file))
 	{
-		throw MAKESTR("BinaryWriter: Error opening \"" << s << "\": " << strerror(errno));
-	}
-	else
-	{
-		this->isLoaded = true;
+		throw MAKESTR("BinaryWriter: Error opening \"" << filename << "\": " << strerror(errno));
 	}
 }
 
-void BinaryWriter::Close()
+BinaryWriter::~BinaryWriter()
 {
-	if(this->isLoaded)
+	if(this->file != nullptr)
 	{
 		fclose(this->file);
-	}
-	else
-	{
-		throw std::string("BinaryWriter: Called Close(), but no file is open");
+		this->file = nullptr;
 	}
 }
 
 bool BinaryWriter::WriteBool(bool b)
 {
-	if(!this->isLoaded) return false;
-	++this->totalBytes;
-	char buf[1];
-	buf[0] = (b?1:0);
-	fwrite(buf, 1, 1, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteBool");
-		return false;
-	}
-	return true;
+	return this->WriteUInt8(b ? 1 : 0);
 }
 
-bool BinaryWriter::WriteInt8(int8_t c)
+bool BinaryWriter::WriteInt8(int8_t value)
 {
-	if(!this->isLoaded) return false;
-	++this->totalBytes;
-	char buf[1];
-	buf[0] = c;
-	fwrite(buf, 1, 1, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteInt8");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<int8_t>(value);
 }
 
 bool BinaryWriter::WriteUInt8(uint8_t value)
 {
-	if(!this->isLoaded) return false;
-	++this->totalBytes;
-	char buf[1];
-	buf[0] = value;
-	fwrite(buf, 1, 1, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteUInt8");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<uint8_t>(value);
 }
 
 bool BinaryWriter::WriteInt16(int16_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 2;
-	char buf[2];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	fwrite(buf, 1, 2, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteInt16");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<int16_t>(i);
 }
 
 bool BinaryWriter::WriteUInt16(uint16_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 2;
-	char buf[2];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	fwrite(buf, 1, 2, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteUInt16");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<uint16_t>(i);
 }
 
 bool BinaryWriter::WriteInt32(int32_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 4;
-	char buf[4];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	fwrite(buf, 1, 4, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteInt32");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<int32_t>(i);
 }
 
 bool BinaryWriter::WriteUInt32(uint32_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 4;
-	char buf[4];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	fwrite(buf, 1, 4, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteUInt32");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<uint32_t>(i);
 }
 
 bool BinaryWriter::WriteInt64(int64_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 8;
-	char buf[8];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	buf[4] = (i >> 32);
-	buf[5] = (i >> 40);
-	buf[6] = (i >> 48);
-	buf[7] = (i >> 56);
-	fwrite(buf, 1, 8, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteInt64");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<int64_t>(i);
 }
 
 bool BinaryWriter::WriteUInt64(uint64_t i)
 {
-	if(!this->isLoaded) return false;
-	this->totalBytes += 8;
-	char buf[8];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	buf[4] = (i >> 32);
-	buf[5] = (i >> 40);
-	buf[6] = (i >> 48);
-	buf[7] = (i >> 56);
-	fwrite(buf, 1, 8, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteUInt64");
-		return false;
-	}
-	return true;
+	return this->type_to_bytes<uint64_t>(i);
 }
 
-#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
+#if __SIZEOF_INT128__ == 16
 bool BinaryWriter::WriteInt128(__int128 i)
 {
-	if(!this->isLoaded)
-	{
-		return false;
-	}
-	if(sizeof(__int128) != 16)
-	{
-		throw MAKESTR("BinaryReader: __int128 size is " << sizeof(__int128) << " (expected 16)");
-	}
-
-	this->totalBytes += 16;
-	char buf[16];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	buf[4] = (i >> 32);
-	buf[5] = (i >> 40);
-	buf[6] = (i >> 48);
-	buf[7] = (i >> 56);
-	buf[8] = (i >> 64);
-	buf[9] = (i >> 72);
-	buf[10] = (i >> 80);
-	buf[11] = (i >> 88);
-	buf[12] = (i >> 96);
-	buf[13] = (i >> 104);
-	buf[14] = (i >> 112);
-	buf[15] = (i >> 120);
-	fwrite(buf, 1, 16, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteInt128");
-		return false;
-	}
-	return true;
+	static_assert(sizeof(__int128) == 16, "__int128 must be 16 bytes");
+	return this->type_to_bytes<__int128>(i);
 }
 
 bool BinaryWriter::WriteUInt128(unsigned __int128 i)
 {
-	if(!this->isLoaded)
-	{
-		return false;
-	}
-	if(sizeof(unsigned __int128) != 16)
-	{
-		throw MAKESTR("BinaryReader: unsigned __int128 size is " << sizeof(unsigned __int128) << " (expected 16)");
-	}
-
-	this->totalBytes += 16;
-	char buf[16];
-	buf[0] = i;
-	buf[1] = (i >> 8);
-	buf[2] = (i >> 16);
-	buf[3] = (i >> 24);
-	buf[4] = (i >> 32);
-	buf[5] = (i >> 40);
-	buf[6] = (i >> 48);
-	buf[7] = (i >> 56);
-	buf[8] = (i >> 64);
-	buf[9] = (i >> 72);
-	buf[10] = (i >> 80);
-	buf[11] = (i >> 88);
-	buf[12] = (i >> 96);
-	buf[13] = (i >> 104);
-	buf[14] = (i >> 112);
-	buf[15] = (i >> 120);
-	fwrite(buf, 1, 16, this->file);
-	if(ferror(this->file))
-	{
-		perror("Error writing file in WriteUInt128");
-		return false;
-	}
-	return true;
+	static_assert(sizeof(unsigned __int128) == 16, "unsigned __int128 must be 16 bytes");
+	return this->type_to_bytes<unsigned __int128>(i);
 }
 #endif
 
 bool BinaryWriter::WriteFloat32(float value)
 {
-	if(sizeof(float) == 4)
-	{
-		// warning: dereferencing type-punned pointer will break strict-aliasing rules
-		//return this->WriteInt32(*(int32_t*)&value);
-
-		// no warning
-		return this->WriteChars((char*)&value, 4, 4);
-	}
-	else
-	{
-		throw MAKESTR("BinaryWriter: float size is " << sizeof(float) << " (expected 4)");
-	}
+	static_assert(sizeof(float) == 4, "float must be 4 bytes");
+	return this->type_to_bytes<float>(value);
 }
 
 bool BinaryWriter::WriteFloat64(double value)
 {
-	if(sizeof(double) == 8)
-	{
-		// warning: dereferencing type-punned pointer will break strict-aliasing rules
-		//return this->WriteInt64(*(int64_t*)&value);
-
-		// no warning
-		return this->WriteChars((char*)&value, 8, 8);
-	}
-	else
-	{
-		throw MAKESTR("BinaryWriter: double size is " << sizeof(double) << " (expected 8)");
-	}
+	static_assert(sizeof(double) == 8, "double must be 8 bytes");
+	return this->type_to_bytes<double>(value);
 }
 
 bool BinaryWriter::WriteFloat128(FLOAT16 value)
 {
-	#if defined(__GNUC__) && !defined(__MINGW32__) // MingW gives an error - does not appear to support __int128
-	if(sizeof(FLOAT16) == 16)
-	{
-		// warning: dereferencing type-punned pointer will break strict-aliasing rules
-		//return this->WriteInt128(*(__int128*)&value);
-
-		// no warning
-		return this->WriteChars((char*)&value, 16, 16);
-	}
-	else
-	{
-		throw MAKESTR("BinaryWriter: long double size is " << sizeof(FLOAT16) << " (expected 16)");
-	}
+	#if __SIZEOF_INT128__ == 16
+	static_assert(sizeof(FLOAT16) == 16, "FLOAT16 must be 16 bytes");
+	return this->type_to_bytes<FLOAT16>(value);
 	#else
 	throw std::string("WriteFloat128 depends on the WriteInt128 function");
 	#endif
 }
 
-// This is faster than using WriteInt8 in a loop
-bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
+bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize)
 {
-	if(!this->isLoaded) return false;
-
-	if(startpos != 0)
-	{
-		if(startpos == bufSize)
-		{
-			std::cout << "BinaryWriter: Warning: startpos == bufSize in WriteChars\n";
-			return true;
-		}
-
-		try
-		{
-			std::string s(c, bufSize);
-			s = s.substr(startpos);
-			bufSize = s.length();
-			c = s.c_str();
-		}
-		catch(std::out_of_range e)
-		{
-			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteChars\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
-			throw e;
-		}
-	}
-	if(len > bufSize)
-	{
-		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
-	}
-	this->totalBytes += len;
-	fwrite(c, 1, len, this->file);
-	if(ferror(this->file))
-	{
-		perror("BinaryWriter: Error writing file in WriteChars");
-		return false;
-	}
-	return true;
+	return this->WriteChars(c, bufSize, bufSize);
 }
 
-// This is faster than using WriteUInt8 in a loop
+bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
+{
+	static_assert(sizeof(char) == 1, "char must be 1 byte");
+	return this->WriteBytes(reinterpret_cast<const uint8_t*>(c), bufSize, len, startpos);
+}
+
+bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize)
+{
+	return this->WriteBytes(c, bufSize, bufSize);
+}
+
 bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
 {
-	if(!this->isLoaded) return false;
+	if(this->file == nullptr)
+	{
+		return false;
+	}
 
 	if(startpos != 0)
 	{
-		if(startpos == bufSize)
-		{
-			std::cout << "BinaryWriter: Warning: startpos == bufSize in WriteBytes\n";
-			return true;
-		}
-
-		try
-		{
-			std::basic_string<uint8_t> s(c, bufSize);
-			s = s.substr(startpos);
-			bufSize = s.length();
-			c = (uint8_t*)s.c_str();
-		}
-		catch(std::out_of_range e)
-		{
-			std::cerr << "BinaryWriter: Got std::out_of_range exception in WriteBytes\nbufSize: " << bufSize << " (" << bufSize + startpos << ")\nlen: " << len << "\nstartpos: " << startpos << "\n";
-			throw e;
-		}
+		return this->WriteBytes(c + startpos, bufSize - startpos, len);
 	}
 	if(len > bufSize)
 	{
 		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
 	}
-	this->totalBytes += len;
-	fwrite(c, 1, len, this->file);
+
+	fwrite(c, sizeof(uint8_t), len, this->file);
 	if(ferror(this->file))
 	{
 		perror("BinaryWriter: Error writing file in WriteBytes");
@@ -425,35 +172,45 @@ bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, 
 	return true;
 }
 
-bool BinaryWriter::WriteString(std::string s)
+bool BinaryWriter::WriteBytes(const std::vector<uint8_t>& bytes)
 {
-	return this->WriteChars(s.c_str(), s.length(), s.length());
+	return this->WriteBytes(&bytes[0], bytes.size());
 }
 
-// TODO: check the return value of WriteUInt8
+bool BinaryWriter::WriteString(std::string s)
+{
+	return this->WriteChars(s.c_str(), s.length());
+}
+
 // WARNING: this might not be accurate for large values!
-void BinaryWriter::Write7BitEncodedInt(uint64_t value)
+bool BinaryWriter::Write7BitEncodedInt(uint64_t value)
 {
 	while(value >= 128)
 	{
-		WriteUInt8(static_cast<uint8_t>(value | 0x80));
+		if(!WriteUInt8(static_cast<uint8_t>(value | 0x80)))
+		{
+			return false;
+		}
 		value >>= 7;
 	}
-	WriteUInt8(static_cast<uint8_t>(value));
+	return WriteUInt8(static_cast<uint8_t>(value));
 }
 
 bool BinaryWriter::WriteStringMS(std::string s)
 {
-	if(!this->isLoaded) return false;
+	size_t len = s.length();
+	return this->Write7BitEncodedInt(len) && this->WriteChars(s.c_str(), len);
+}
 
-	int len = s.length();
-	this->totalBytes += len;
-	Write7BitEncodedInt(len);
-	fwrite(s.c_str(), 1, len, this->file);
-	if(ferror(this->file))
+template <class type>
+bool BinaryWriter::type_to_bytes(type value)
+{
+	/*
+	uint8_t buf[sizeof(type)];
+	for(uint_fast8_t a = 0; a < sizeof(type); ++a)
 	{
-		perror("BinaryWriter: Error writing file in WriteStringMS");
-		return false;
+		buf[a] = static_cast<uint8_t>(value >> (a * 8));
 	}
-	return true;
+	return this->WriteBytes(buf, sizeof(buf));*/
+	return this->WriteBytes(reinterpret_cast<uint8_t*>(&value), sizeof(type));
 }

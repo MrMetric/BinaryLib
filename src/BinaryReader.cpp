@@ -9,9 +9,8 @@
 
 template <class type> type BinaryReader::bytes_to_type()
 {
-	uint8_t* buf = this->ReadBytes(sizeof(type));
-	type ret = *(reinterpret_cast<type*>(buf));
-	delete[] buf;
+	std::unique_ptr<uint8_t[]> buf = this->ReadBytes(sizeof(type));
+	type ret = *(reinterpret_cast<type*>(buf.get()));
 	return ret;
 }
 
@@ -42,14 +41,14 @@ BinaryReader::BinaryReader(const std::string& s)
 	@arg		data The byte array to read
 	@arg		size The size (in bytes) of the byte array
 */
-BinaryReader::BinaryReader(uint8_t* data, const uint_fast64_t size)
+BinaryReader::BinaryReader(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size)
 {
-	this->ChangeFile(data, size);
+	this->ChangeFile(std::move(data), size);
 }
 
 BinaryReader::~BinaryReader()
 {
-	if(this->isLoaded)
+	if(this->is_loaded)
 	{
 		this->Close();
 	}
@@ -61,12 +60,11 @@ BinaryReader::~BinaryReader()
 */
 void BinaryReader::ChangeFile(const std::string& s)
 {
-	if(this->isLoaded)
+	if(this->is_loaded)
 	{
 		this->Close();
 	}
 
-	this->fname = s;
 	this->pos = 0;
 	this->data = nullptr;
 	this->file = fopen(s.c_str(), "rb");
@@ -75,44 +73,43 @@ void BinaryReader::ChangeFile(const std::string& s)
 		throw MAKESTR("BinaryReader: Error opening \"" << s << "\": " << strerror(errno));
 	}
 	fseek(file, 0, SEEK_END);
-	this->fSize = ftell(file);
+	this->file_size = ftell(file);
 	rewind(file);
 	if(ferror(this->file))
 	{
 		throw MAKESTR("BinaryWriter: Error getting file info: " << strerror(errno));
 	}
-	this->isLoaded = true;
-	this->usingArray = false;
+	this->is_loaded = true;
+	this->using_array = false;
 }
 
 /**
 	Close the current file, if one is loaded, and use a byte array
 	@arg		data The byte array to read
 */
-void BinaryReader::ChangeFile(uint8_t* data, const uint_fast64_t size)
+void BinaryReader::ChangeFile(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size)
 {
-	if(this->isLoaded && !this->usingArray)
+	if(this->is_loaded && !this->using_array)
 	{
 		this->Close();
 	}
 
-	this->fname = "";
 	this->pos = 0;
 	this->file = nullptr;
-	this->data = data;
-	this->fSize = size;
-	this->isLoaded = true;
-	this->usingArray = true;
+	this->data = std::move(data);
+	this->file_size = size;
+	this->is_loaded = true;
+	this->using_array = true;
 }
 
 void BinaryReader::Close()
 {
-	if(!this->isLoaded)
+	if(!this->is_loaded)
 	{
 		return;
 	}
 
-	if(this->usingArray)
+	if(this->using_array)
 	{
 		this->data = nullptr;
 	}
@@ -121,7 +118,7 @@ void BinaryReader::Close()
 		fclose(this->file);
 		this->file = nullptr;
 	}
-	this->isLoaded = false;
+	this->is_loaded = false;
 }
 
 /**
@@ -219,14 +216,8 @@ unsigned __int128 BinaryReader::ReadUInt128()
 */
 float BinaryReader::ReadFloat32()
 {
-	if(sizeof(float) == 4)
-	{
-		return this->bytes_to_type<float>();
-	}
-	else
-	{
-		throw MAKESTR("float size is " << sizeof(float) << " (expected 4)");
-	}
+	static_assert(sizeof(float) == 4, "float must be 4 bytes");
+	return this->bytes_to_type<float>();
 }
 
 /**
@@ -234,14 +225,8 @@ float BinaryReader::ReadFloat32()
 */
 double BinaryReader::ReadFloat64()
 {
-	if(sizeof(double) == 8)
-	{
-		return this->bytes_to_type<double>();
-	}
-	else
-	{
-		throw MAKESTR("double size is " << sizeof(double) << " (expected 8)");
-	}
+	static_assert(sizeof(double) == 8, "double must be 8 bytes");
+	return this->bytes_to_type<double>();
 }
 
 /**
@@ -249,14 +234,8 @@ double BinaryReader::ReadFloat64()
 */
 long double BinaryReader::ReadFloat128()
 {
-	if(sizeof(FLOAT16) == 16)
-	{
-		return this->bytes_to_type<FLOAT16>();
-	}
-	else
-	{
-		throw MAKESTR("long double size is " << sizeof(long double) << " (expected 16)");
-	}
+	static_assert(sizeof(FLOAT16) == 16, "FLOAT16 must be 16 bytes");
+	return this->bytes_to_type<FLOAT16>();
 }
 
 // TODO: check accuracy
@@ -275,30 +254,25 @@ long double BinaryReader::ReadFloat128()
 	return ret;
 }*/
 
-char* BinaryReader::ReadChars(uint_fast64_t bytes)
+std::unique_ptr<char[]> BinaryReader::ReadChars(uint_fast64_t bytes)
 {
-	if(!this->isLoaded)
+	if(!this->is_loaded)
 	{
 		throw MAKESTR("Called ReadChars(" << bytes << "), but no file is loaded");
 	}
 
-	char* buf = new char[bytes];
+	std::unique_ptr<char[]> buf(new char[bytes]);
 
-	if(this->usingArray)
+	if(this->using_array)
 	{
-		for(uint_fast32_t i = 0; i < bytes; ++i)
-		{
-			uint8_t byte = this->data[this->pos + i];
-			buf[i] = *reinterpret_cast<char*>(&byte);
-		}
+		std::copy_n(reinterpret_cast<char*>(this->data.get()) + this->pos, bytes, buf.get());
 	}
 	else
 	{
 		fseek(this->file, this->pos, SEEK_SET);
-		fread(buf, 1, bytes, this->file);
+		fread(buf.get(), 1, bytes, this->file);
 		if(ferror(this->file))
 		{
-			delete[] buf;
 			throw MAKESTR("Error reading file: " << strerror(errno));
 		}
 	}
@@ -308,23 +282,23 @@ char* BinaryReader::ReadChars(uint_fast64_t bytes)
 	return buf;
 }
 
-uint8_t* BinaryReader::ReadBytes(uint_fast64_t bytes)
+std::unique_ptr<uint8_t[]> BinaryReader::ReadBytes(uint_fast64_t bytes)
 {
-	if(!this->isLoaded)
+	if(!this->is_loaded)
 	{
 		throw MAKESTR("Called ReadBytes(" << bytes << "), but no file is loaded");
 	}
 
-	uint8_t* buf = new uint8_t[bytes];
+	std::unique_ptr<uint8_t[]> buf(new uint8_t[bytes]);
 
-	if(this->usingArray)
+	if(this->using_array)
 	{
-		std::copy_n(this->data + this->pos, bytes, buf);
+		std::copy_n(this->data.get() + this->pos, bytes, buf.get());
 	}
 	else
 	{
 		fseek(this->file, this->pos, SEEK_SET);
-		fread(buf, 1, bytes, this->file);
+		fread(buf.get(), 1, bytes, this->file);
 		if(ferror(this->file))
 		{
 			throw MAKESTR("Error reading file: " << strerror(errno));
@@ -338,9 +312,8 @@ uint8_t* BinaryReader::ReadBytes(uint_fast64_t bytes)
 
 std::string BinaryReader::ReadString(uint_fast64_t length)
 {
-	char* buf = this->ReadChars(length);
-	std::string ret(buf, length);
-	delete[] buf;
+	std::unique_ptr<char[]> buf = this->ReadChars(length);
+	std::string ret(buf.get(), length);
 	return ret;
 }
 
@@ -352,7 +325,7 @@ uint64_t BinaryReader::Read7BitEncodedInt()
 
 	while(shift != 70) // maximum shifting is 7 * 9
 	{
-		uint8_t b = this->ReadUInt8();
+		uint_fast64_t b = this->ReadUInt8();
 		ret |= (b & 127) << shift;
 		shift += 7;
 		if((b & 128) == 0)

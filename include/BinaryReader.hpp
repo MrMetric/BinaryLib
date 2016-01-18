@@ -4,19 +4,18 @@
 
 #include <cstdint>
 #include <string>
+#include <memory>
 
 class BinaryReader
 {
 	public:
 		explicit BinaryReader(const std::string& s);
-		BinaryReader(uint8_t* data, const uint_fast64_t size);
+		BinaryReader(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size);
 		~BinaryReader();
 
 		void ChangeFile(const std::string& s);
-		void ChangeFile(uint8_t* data, const uint_fast64_t size);
+		void ChangeFile(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size);
 		void Close();
-
-		template <class type> type bytes_to_type();
 
 		bool ReadBool();
 
@@ -43,19 +42,23 @@ class BinaryReader
 
 		long double ReadFloat128();
 
-		char* ReadChars(uint_fast64_t bytes);
-		uint8_t* ReadBytes(uint_fast64_t bytes);
+		std::unique_ptr<char[]> ReadChars(uint_fast64_t bytes);
+		std::unique_ptr<uint8_t[]> ReadBytes(uint_fast64_t bytes);
 
 		std::string ReadString(uint_fast64_t length);
 
 		uint64_t Read7BitEncodedInt();
 		std::string ReadStringMS();
 
-		bool isLoaded = false;
-		bool usingArray;
-		uint8_t* data = nullptr;
-		std::string fname;
 		uint_fast64_t pos;
+		uint_fast64_t file_size;
+
+	private:
+		template <class type>
+		type bytes_to_type();
+
+		bool is_loaded = false;
 		FILE* file = nullptr;
-		uint_fast64_t fSize;
+		bool using_array;
+		std::unique_ptr<uint8_t[]> data;
 };
