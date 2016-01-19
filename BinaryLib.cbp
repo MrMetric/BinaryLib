@@ -15,11 +15,9 @@
 				<Option compiler="clang" />
 				<Option createDefFile="1" />
 				<Compiler>
-					<Add option="-ftrapv" />
 					<Add option="-Weverything" />
-					<Add option="-Wall" />
 					<Add option="-g" />
-					<Add option="-fsanitize=undefined" />
+					<Add option="-fsanitize=undefined,integer" />
 				</Compiler>
 				<Linker>
 					<Add option="-lubsan" />

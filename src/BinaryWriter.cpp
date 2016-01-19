@@ -1,8 +1,23 @@
 #include "../include/BinaryWriter.hpp"
-#include <sstream> // for std::stringstream
-#include <stdexcept> // for std::out_of_range
+#include <fstream>
 
-#define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
+struct BinaryWriter_private
+{
+	std::ofstream file;
+};
+
+template <class type> void type_to_bytes(BinaryWriter* self, type value)
+{
+	/*
+	uint8_t buf[sizeof(type)];
+	for(uint_fast8_t a = 0; a < sizeof(type); ++a)
+	{
+		buf[a] = static_cast<uint8_t>(value >> (a * 8));
+	}
+	self->WriteBytes(buf, sizeof(buf));
+	*/
+	self->WriteBytes(reinterpret_cast<uint8_t*>(&value), sizeof(type));
+}
 
 /**
 	BinaryWriter.cpp
@@ -19,198 +34,98 @@
 */
 
 BinaryWriter::BinaryWriter(const std::string& filename, bool bak)
-	:
-	filename(filename)
 {
-	if(BinaryLibUtil::fileExists(filename.c_str()))
+	this->privates = new BinaryWriter_private();
+
+	if(bak && BinaryLibUtil::file_exists(filename.c_str()))
 	{
-		if(bak)
-		{
-			std::string s_bak = filename + std::string(".bak");
-			BinaryLibUtil::moveFile(filename.c_str(), s_bak.c_str(), true);
-		}
-		else
-		{
-			BinaryLibUtil::fileDelete(filename.c_str());
-		}
+		std::string s_bak = filename + ".bak";
+		BinaryLibUtil::move_file(filename.c_str(), s_bak.c_str(), true);
 	}
-	this->file = fopen(filename.c_str(), "wb");
-	if(this->file == nullptr || ferror(this->file))
+	this->privates->file.open(filename.c_str(), std::ios::binary | std::ios::trunc);
+	if(!this->privates->file.is_open())
 	{
-		throw MAKESTR("BinaryWriter: Error opening \"" << filename << "\": " << strerror(errno));
+		throw ("BinaryWriter: error opening \"" + filename + "\"");
 	}
 }
 
 BinaryWriter::~BinaryWriter()
 {
-	if(this->file != nullptr)
-	{
-		fclose(this->file);
-		this->file = nullptr;
-	}
+	delete this->privates;
 }
 
-bool BinaryWriter::WriteBool(bool b)
+void BinaryWriter::WriteBool(bool b)
 {
-	return this->WriteUInt8(b ? 1 : 0);
+	this->WriteUInt8(b ? 1 : 0);
 }
 
-bool BinaryWriter::WriteInt8(int8_t value)
-{
-	return this->type_to_bytes<int8_t>(value);
+#define X(name, type)\
+void BinaryWriter::Write##name(type i)\
+{\
+	type_to_bytes<type>(this, i);\
 }
 
-bool BinaryWriter::WriteUInt8(uint8_t value)
-{
-	return this->type_to_bytes<uint8_t>(value);
-}
-
-bool BinaryWriter::WriteInt16(int16_t i)
-{
-	return this->type_to_bytes<int16_t>(i);
-}
-
-bool BinaryWriter::WriteUInt16(uint16_t i)
-{
-	return this->type_to_bytes<uint16_t>(i);
-}
-
-bool BinaryWriter::WriteInt32(int32_t i)
-{
-	return this->type_to_bytes<int32_t>(i);
-}
-
-bool BinaryWriter::WriteUInt32(uint32_t i)
-{
-	return this->type_to_bytes<uint32_t>(i);
-}
-
-bool BinaryWriter::WriteInt64(int64_t i)
-{
-	return this->type_to_bytes<int64_t>(i);
-}
-
-bool BinaryWriter::WriteUInt64(uint64_t i)
-{
-	return this->type_to_bytes<uint64_t>(i);
-}
+BINARYWRITER_TYPES
 
 #if __SIZEOF_INT128__ == 16
-bool BinaryWriter::WriteInt128(__int128 i)
-{
-	static_assert(sizeof(__int128) == 16, "__int128 must be 16 bytes");
-	return this->type_to_bytes<__int128>(i);
-}
-
-bool BinaryWriter::WriteUInt128(unsigned __int128 i)
-{
-	static_assert(sizeof(unsigned __int128) == 16, "unsigned __int128 must be 16 bytes");
-	return this->type_to_bytes<unsigned __int128>(i);
-}
+X(Int128, __int128)
+X(UInt128, unsigned __int128)
+#else
+#warning "BinaryWriter::Write(U)Int128 not included"
 #endif
 
-bool BinaryWriter::WriteFloat32(float value)
+#ifdef FLOAT16
+X(Float128, FLOAT16)
+#else
+#warning "BinaryWriter::WriteFloat128 not included"
+#endif
+
+#undef X
+
+void BinaryWriter::WriteChars(const char* c, uint_fast64_t len)
 {
-	static_assert(sizeof(float) == 4, "float must be 4 bytes");
-	return this->type_to_bytes<float>(value);
+	this->WriteBytes(reinterpret_cast<const uint8_t*>(c), len);
 }
 
-bool BinaryWriter::WriteFloat64(double value)
+void BinaryWriter::WriteBytes(const uint8_t* c, uint_fast64_t len)
 {
-	static_assert(sizeof(double) == 8, "double must be 8 bytes");
-	return this->type_to_bytes<double>(value);
-}
-
-bool BinaryWriter::WriteFloat128(FLOAT16 value)
-{
-	#if __SIZEOF_INT128__ == 16
-	static_assert(sizeof(FLOAT16) == 16, "FLOAT16 must be 16 bytes");
-	return this->type_to_bytes<FLOAT16>(value);
-	#else
-	throw std::string("WriteFloat128 depends on the WriteInt128 function");
-	#endif
-}
-
-bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize)
-{
-	return this->WriteChars(c, bufSize, bufSize);
-}
-
-bool BinaryWriter::WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
-{
-	static_assert(sizeof(char) == 1, "char must be 1 byte");
-	return this->WriteBytes(reinterpret_cast<const uint8_t*>(c), bufSize, len, startpos);
-}
-
-bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize)
-{
-	return this->WriteBytes(c, bufSize, bufSize);
-}
-
-bool BinaryWriter::WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos)
-{
-	if(this->file == nullptr)
+	if(this->privates->file == nullptr)
 	{
-		return false;
+		return;
 	}
 
-	if(startpos != 0)
-	{
-		return this->WriteBytes(c + startpos, bufSize - startpos, len);
-	}
-	if(len > bufSize)
-	{
-		throw MAKESTR("BinaryWriter: len > bufSize (" << len << " > " << bufSize << ")");
-	}
-
-	fwrite(c, sizeof(uint8_t), len, this->file);
-	if(ferror(this->file))
-	{
-		perror("BinaryWriter: Error writing file in WriteBytes");
-		return false;
-	}
-	return true;
+	this->privates->file.write(reinterpret_cast<const char*>(c), len);
 }
 
-bool BinaryWriter::WriteBytes(const std::vector<uint8_t>& bytes)
+void BinaryWriter::WriteBytes(const std::vector<uint8_t>& bytes)
 {
-	return this->WriteBytes(&bytes[0], bytes.size());
+	this->WriteBytes(&bytes[0], bytes.size());
 }
 
-bool BinaryWriter::WriteString(std::string s)
+void BinaryWriter::WriteChars(const std::vector<char>& bytes)
 {
-	return this->WriteChars(s.c_str(), s.length());
+	this->WriteChars(&bytes[0], bytes.size());
+}
+
+void BinaryWriter::WriteChars(const std::string& s)
+{
+	this->WriteChars(s.c_str(), s.length());
 }
 
 // WARNING: this might not be accurate for large values!
-bool BinaryWriter::Write7BitEncodedInt(uint64_t value)
+void BinaryWriter::Write7BitEncodedInt(uint64_t value)
 {
 	while(value >= 128)
 	{
-		if(!WriteUInt8(static_cast<uint8_t>(value | 0x80)))
-		{
-			return false;
-		}
+		this->WriteUInt8(static_cast<uint8_t>(value | 0x80));
 		value >>= 7;
 	}
-	return WriteUInt8(static_cast<uint8_t>(value));
+	this->WriteUInt8(static_cast<uint8_t>(value));
 }
 
-bool BinaryWriter::WriteStringMS(std::string s)
+void BinaryWriter::WriteStringMS(const std::string& s)
 {
 	size_t len = s.length();
-	return this->Write7BitEncodedInt(len) && this->WriteChars(s.c_str(), len);
-}
-
-template <class type>
-bool BinaryWriter::type_to_bytes(type value)
-{
-	/*
-	uint8_t buf[sizeof(type)];
-	for(uint_fast8_t a = 0; a < sizeof(type); ++a)
-	{
-		buf[a] = static_cast<uint8_t>(value >> (a * 8));
-	}
-	return this->WriteBytes(buf, sizeof(buf));*/
-	return this->WriteBytes(reinterpret_cast<uint8_t*>(&value), sizeof(type));
+	this->Write7BitEncodedInt(len);
+	this->WriteChars(s.c_str(), len);
 }

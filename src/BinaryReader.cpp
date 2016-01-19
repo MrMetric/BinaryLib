@@ -1,15 +1,18 @@
 #include "../include/BinaryReader.hpp"
-#include <stdio.h> // for file functions
-#include <sstream>
-#include <string.h> // for strerror and errno
-#include <iostream>
+#include <fstream>
 #include <algorithm> // std::copy_n
 
-#define MAKESTR(ss) static_cast<std::ostringstream&>(std::ostringstream().seekp(0) << ss).str()
-
-template <class type> type BinaryReader::bytes_to_type()
+struct BinaryReader_private
 {
-	std::unique_ptr<uint8_t[]> buf = this->ReadBytes(sizeof(type));
+	std::ifstream file;
+	std::unique_ptr<uint8_t[]> data;
+	uint_fast64_t file_size;
+	uint_fast64_t pos;
+};
+
+template <class type> type bytes_to_type(BinaryReader* self)
+{
+	std::unique_ptr<uint8_t[]> buf = self->ReadBytes(sizeof(type));
 	type ret = *(reinterpret_cast<type*>(buf.get()));
 	return ret;
 }
@@ -34,6 +37,7 @@ template <class type> type BinaryReader::bytes_to_type()
 */
 BinaryReader::BinaryReader(const std::string& s)
 {
+	this->privates = new BinaryReader_private();
 	this->ChangeFile(s);
 }
 
@@ -43,44 +47,33 @@ BinaryReader::BinaryReader(const std::string& s)
 */
 BinaryReader::BinaryReader(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size)
 {
+	this->privates = new BinaryReader_private();
 	this->ChangeFile(std::move(data), size);
 }
 
 BinaryReader::~BinaryReader()
 {
-	if(this->is_loaded)
-	{
-		this->Close();
-	}
+	this->Close();
+	delete this->privates;
 }
 
 /**
 	Close the current file, if one is loaded, and open a file
 	@arg		s The file to read
 */
-void BinaryReader::ChangeFile(const std::string& s)
+void BinaryReader::ChangeFile(const std::string& filename)
 {
-	if(this->is_loaded)
-	{
-		this->Close();
-	}
+	this->Close();
 
-	this->pos = 0;
-	this->data = nullptr;
-	this->file = fopen(s.c_str(), "rb");
-	if(this->file == nullptr || ferror(this->file))
+	this->privates->pos = 0;
+	this->privates->data = nullptr;
+	this->privates->file.open(filename.c_str(), std::ios::binary | std::ios::ate);
+	if(!this->privates->file.is_open())
 	{
-		throw MAKESTR("BinaryReader: Error opening \"" << s << "\": " << strerror(errno));
+		throw ("BinaryReader: error opening \"" + filename + "\"");
 	}
-	fseek(file, 0, SEEK_END);
-	this->file_size = ftell(file);
-	rewind(file);
-	if(ferror(this->file))
-	{
-		throw MAKESTR("BinaryWriter: Error getting file info: " << strerror(errno));
-	}
-	this->is_loaded = true;
-	this->using_array = false;
+	this->privates->file_size = this->privates->file.tellg();
+	this->privates->file.seekg(0, this->privates->file.beg);
 }
 
 /**
@@ -89,223 +82,95 @@ void BinaryReader::ChangeFile(const std::string& s)
 */
 void BinaryReader::ChangeFile(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size)
 {
-	if(this->is_loaded && !this->using_array)
-	{
-		this->Close();
-	}
+	this->Close();
 
-	this->pos = 0;
-	this->file = nullptr;
-	this->data = std::move(data);
-	this->file_size = size;
-	this->is_loaded = true;
-	this->using_array = true;
+	this->privates->pos = 0;
+	this->privates->file.close();
+	this->privates->data = std::move(data);
+	this->privates->file_size = size;
 }
 
 void BinaryReader::Close()
 {
-	if(!this->is_loaded)
+	if(this->privates->data != nullptr)
 	{
-		return;
+		this->privates->data = nullptr;
 	}
-
-	if(this->using_array)
+	else if(this->privates->file.is_open())
 	{
-		this->data = nullptr;
+		this->privates->file.close();
 	}
-	else
-	{
-		fclose(this->file);
-		this->file = nullptr;
-	}
-	this->is_loaded = false;
 }
 
-/**
-	Read 1 byte as a boolean value. 0 is false, everything else is true.
-*/
+uint_fast64_t BinaryReader::GetFileSize() const
+{
+	return this->privates->file_size;
+}
+
+uint_fast64_t BinaryReader::GetPosition() const
+{
+	return this->privates->pos;
+}
+
+void BinaryReader::Seek(uint_fast64_t pos)
+{
+	this->privates->pos = pos;
+}
+
 bool BinaryReader::ReadBool()
 {
-	return (ReadUInt8() != 0);
+	return (this->ReadUInt8() != 0);
 }
 
-/**
-	Read 1 byte as a signed 8-bit integer
-*/
-int8_t BinaryReader::ReadInt8()
-{
-	return this->bytes_to_type<int8_t>();
+#define X(name, type)\
+type BinaryReader::Read##name()\
+{\
+	return bytes_to_type<type>(this);\
 }
 
-/**
-	Read 1 byte as an unsigned 8-bit integer
-*/
-uint8_t BinaryReader::ReadUInt8()
-{
-	return this->bytes_to_type<uint8_t>();
-}
-
-/**
-	Read 2 bytes as a signed 16-bit integer
-*/
-int16_t BinaryReader::ReadInt16()
-{
-	return this->bytes_to_type<int16_t>();
-}
-
-/**
-	Read 2 bytes as an unsigned 16-bit integer
-*/
-uint16_t BinaryReader::ReadUInt16()
-{
-	return this->bytes_to_type<uint16_t>();
-}
-
-/**
-	Read 4 bytes as a signed 32-bit integer
-*/
-int32_t BinaryReader::ReadInt32()
-{
-	return this->bytes_to_type<int32_t>();
-}
-
-/**
-	Read 4 bytes as an unsigned 32-bit integer
-*/
-uint32_t BinaryReader::ReadUInt32()
-{
-	return this->bytes_to_type<uint32_t>();
-}
-
-/**
-	Read 8 bytes as a signed 64-bit integer
-*/
-int64_t BinaryReader::ReadInt64()
-{
-	return this->bytes_to_type<int64_t>();
-}
-
-/**
-	Read 8 bytes as an unsigned 64-bit integer
-*/
-uint64_t BinaryReader::ReadUInt64()
-{
-	return this->bytes_to_type<uint64_t>();
-}
+BINARYREADER_TYPES
 
 #if __SIZEOF_INT128__ == 16
-/**
-	Read 16 bytes as a signed 128-bit integer
-*/
-__int128 BinaryReader::ReadInt128()
-{
-	return this->bytes_to_type<__int128>();
-}
-
-/**
-	Read 16 bytes as an unsigned 128-bit integer
-*/
-unsigned __int128 BinaryReader::ReadUInt128()
-{
-	return this->bytes_to_type<unsigned __int128>();
-}
+X(Int128, __int128)
+X(UInt128, unsigned __int128)
+#else
+#warning "BinaryReader::Read(U)Int128 not included"
 #endif
 
-/**
-	Read 4 bytes as a 32-bit floating-point number
-*/
-float BinaryReader::ReadFloat32()
-{
-	static_assert(sizeof(float) == 4, "float must be 4 bytes");
-	return this->bytes_to_type<float>();
-}
+#ifdef FLOAT16
+X(Float128, FLOAT16)
+#else
+#warning "BinaryReader::ReadFloat128 not included"
+#endif
 
-/**
-	Read 8 bytes as a 64-bit floating-point number
-*/
-double BinaryReader::ReadFloat64()
-{
-	static_assert(sizeof(double) == 8, "double must be 8 bytes");
-	return this->bytes_to_type<double>();
-}
-
-/**
-	Read 16 bytes as a 128-bit floating-point number
-*/
-long double BinaryReader::ReadFloat128()
-{
-	static_assert(sizeof(FLOAT16) == 16, "FLOAT16 must be 16 bytes");
-	return this->bytes_to_type<FLOAT16>();
-}
-
-// TODO: check accuracy
-/*uint32_t BinaryReader::Read7BitEncodedInt(uint8_t b)
-{
-	uint_fast32_t ret = 0;
-	uint_fast32_t shift = 0;
-
-	do
-	{
-		ret |= (b & 0x7f) << shift;
-		shift += 7;
-	}
-	while((b & 0x80) == 0x80);
-
-	return ret;
-}*/
+#undef X
 
 std::unique_ptr<char[]> BinaryReader::ReadChars(uint_fast64_t bytes)
 {
-	if(!this->is_loaded)
-	{
-		throw MAKESTR("Called ReadChars(" << bytes << "), but no file is loaded");
-	}
-
-	std::unique_ptr<char[]> buf(new char[bytes]);
-
-	if(this->using_array)
-	{
-		std::copy_n(reinterpret_cast<char*>(this->data.get()) + this->pos, bytes, buf.get());
-	}
-	else
-	{
-		fseek(this->file, this->pos, SEEK_SET);
-		fread(buf.get(), 1, bytes, this->file);
-		if(ferror(this->file))
-		{
-			throw MAKESTR("Error reading file: " << strerror(errno));
-		}
-	}
-
-	this->pos += bytes;
-
-	return buf;
+	std::unique_ptr<uint8_t[]> uptr = this->ReadBytes(bytes);
+	char* ptr = reinterpret_cast<char*>(uptr.release());
+	return std::unique_ptr<char[]>(ptr);
 }
 
 std::unique_ptr<uint8_t[]> BinaryReader::ReadBytes(uint_fast64_t bytes)
 {
-	if(!this->is_loaded)
-	{
-		throw MAKESTR("Called ReadBytes(" << bytes << "), but no file is loaded");
-	}
-
 	std::unique_ptr<uint8_t[]> buf(new uint8_t[bytes]);
 
-	if(this->using_array)
+	if(this->privates->data != nullptr)
 	{
-		std::copy_n(this->data.get() + this->pos, bytes, buf.get());
+		std::copy_n(this->privates->data.get() + this->privates->pos, bytes, buf.get());
+	}
+	else if(this->privates->file.is_open())
+	{
+		this->privates->file.seekg(this->privates->pos, this->privates->file.beg);
+		this->privates->file.read(reinterpret_cast<char*>(buf.get()), bytes);
 	}
 	else
 	{
-		fseek(this->file, this->pos, SEEK_SET);
-		fread(buf.get(), 1, bytes, this->file);
-		if(ferror(this->file))
-		{
-			throw MAKESTR("Error reading file: " << strerror(errno));
-		}
+		throw std::string("BinaryReader: tried to read, but no file is loaded");
 	}
 
-	this->pos += bytes;
+	this->privates->pos += bytes;
 
 	return buf;
 }
@@ -317,7 +182,7 @@ std::string BinaryReader::ReadString(uint_fast64_t length)
 	return ret;
 }
 
-// Derived from http://www.terrariaonline.com/threads/86509/
+// derived from http://www.terrariaonline.com/threads/86509/
 uint64_t BinaryReader::Read7BitEncodedInt()
 {
 	uint_fast64_t ret = 0;

@@ -5,50 +5,52 @@
 #include <cstdint>
 #include <vector>
 
+#define BINARYWRITER_TYPES\
+	X(Int8, int8_t)\
+	X(UInt8, uint8_t)\
+	X(Int16, int16_t)\
+	X(UInt16, uint16_t)\
+	X(Int32, int32_t)\
+	X(UInt32, uint32_t)\
+	X(Int64, int64_t)\
+	X(UInt64, uint64_t)\
+	X(Float32, float)\
+	X(Float64, double)
+
+struct BinaryWriter_private;
 class BinaryWriter
 {
 	public:
 		BinaryWriter(const std::string& filename, bool bak = false);
+		BinaryWriter(const BinaryWriter&) = delete;
 		~BinaryWriter();
 
-		bool WriteBool(bool b);
+		void WriteBool(bool b);
 
-		bool WriteInt8(int8_t c);
-		bool WriteUInt8(uint8_t value);
+		#define X(name, type) void Write##name(type);
 
-		bool WriteInt16(int16_t i);
-		bool WriteUInt16(uint16_t i);
-
-		bool WriteInt32(int32_t i);
-		bool WriteUInt32(uint32_t i);
-
-		bool WriteInt64(int64_t i);
-		bool WriteUInt64(uint64_t i);
+		BINARYWRITER_TYPES
 
 		#if __SIZEOF_INT128__ == 16
-		bool WriteInt128(__int128 i);
-		bool WriteUInt128(unsigned __int128 i);
+		X(Int128, __int128)
+		X(UInt128, unsigned __int128)
 		#endif
 
-		bool WriteFloat32(float value);
-		bool WriteFloat64(double value);
-		bool WriteFloat128(FLOAT16 value);
+		#ifdef FLOAT16
+		X(Float128, FLOAT16)
+		#endif
 
-		bool WriteChars(const char* c, uint64_t bufSize);
-		bool WriteChars(const char* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
-		bool WriteBytes(const uint8_t* c, uint64_t bufSize);
-		bool WriteBytes(const uint8_t* c, uint64_t bufSize, uint64_t len, uint64_t startpos = 0);
-		bool WriteBytes(const std::vector<uint8_t>& bytes);
+		#undef X
 
-		bool WriteString(std::string s);
+		void WriteChars(const char*, uint_fast64_t len);
+		void WriteBytes(const uint8_t*, uint_fast64_t len);
+		void WriteBytes(const std::vector<uint8_t>&);
+		void WriteChars(const std::vector<char>&);
+		void WriteChars(const std::string&);
 
-		bool Write7BitEncodedInt(uint64_t value);
-		bool WriteStringMS(std::string s);
+		void Write7BitEncodedInt(uint64_t value);
+		void WriteStringMS(const std::string& s);
 
 	private:
-		template <class type>
-		bool type_to_bytes(type value);
-
-		std::string filename;
-		FILE* file = nullptr;
+		BinaryWriter_private* privates;
 };

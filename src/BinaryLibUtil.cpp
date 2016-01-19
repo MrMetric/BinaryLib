@@ -1,42 +1,33 @@
 #include "../include/BinaryLibUtil.hpp"
 
-// from http://www.cplusplus.com/forum/general/1796/
-bool BinaryLibUtil::fileExists(const char *filename)
+#include <cstring> // strerror
+
+bool BinaryLibUtil::file_exists(const char *filename)
 {
 	std::ifstream ifile(filename);
-	return ifile != nullptr;
+	return ifile.good();
 }
 
-bool BinaryLibUtil::fileDelete(const char *filename)
+void BinaryLibUtil::delete_file(const char *filename)
 {
-	if(!remove(filename) && errno != 0)
+	if(!std::remove(filename) && errno != 0)
 	{
-		std::cerr << "Error deleting " << filename << ": " << strerror(errno) << " (" << errno << ")\n";
-		return false;
+		throw std::string("error deleting ") + filename + ": " + strerror(errno);
 	}
-	return true;
 }
 
-bool BinaryLibUtil::moveFile(const std::string& src, const std::string& dst, const bool overwrite)
+void BinaryLibUtil::move_file(const char* src, const char* dst, const bool overwrite)
 {
-	if(BinaryLibUtil::fileExists(dst.c_str()))
+	if(BinaryLibUtil::file_exists(dst))
 	{
-		if(overwrite && !fileDelete(dst.c_str()))
+		if(overwrite)
 		{
-			std::cerr << "Error renaming \"" << src << "\" to \"" << dst << "\" (failed to delete existing file)\n";
-			return false;
+			delete_file(dst);
 		}
 		else
 		{
-			std::cerr << "Error renaming \"" << src << "\" to \"" << dst << "\" (file already exists)\n";
-			return false;
+			throw std::string("error renaming \"") + src + "\" to \"" + dst + "\": file already exists\n";
 		}
 	}
-	rename(src.c_str(), dst.c_str());
-	return true;
-}
-
-uint32_t BinaryLibUtil::version()
-{
-	return BINARYLIB_VERSION;
+	std::rename(src, dst);
 }
