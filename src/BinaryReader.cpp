@@ -48,6 +48,11 @@ BinaryReader::BinaryReader(const std::string& s)
 BinaryReader::BinaryReader(std::unique_ptr<uint8_t[]> data, const uint_fast64_t size)
 {
 	this->privates = new BinaryReader_private();
+
+	// does not work (no exceptions are thrown)
+	//std::ios_base::iostate exception_mask = this->privates->file.exceptions() | std::ios::failbit | std::ios::badbit | std::ios::eofbit;
+	//this->privates->file.exceptions(exception_mask);
+
 	this->ChangeFile(std::move(data), size);
 }
 
@@ -65,15 +70,16 @@ void BinaryReader::ChangeFile(const std::string& filename)
 {
 	this->Close();
 
-	this->privates->pos = 0;
-	this->privates->data = nullptr;
 	this->privates->file.open(filename.c_str(), std::ios::binary | std::ios::ate);
-	if(!this->privates->file.is_open())
+	if(!this->privates->file.good())
 	{
 		throw ("BinaryReader: error opening \"" + filename + "\"");
 	}
 	this->privates->file_size = this->privates->file.tellg();
-	this->privates->file.seekg(0, this->privates->file.beg);
+	if(!this->privates->file.good())
+	{
+		throw ("BinaryReader: error getting size of \"" + filename + "\"");
+	}
 }
 
 /**
@@ -84,8 +90,6 @@ void BinaryReader::ChangeFile(std::unique_ptr<uint8_t[]> data, const uint_fast64
 {
 	this->Close();
 
-	this->privates->pos = 0;
-	this->privates->file.close();
 	this->privates->data = std::move(data);
 	this->privates->file_size = size;
 }
@@ -100,6 +104,7 @@ void BinaryReader::Close()
 	{
 		this->privates->file.close();
 	}
+	this->privates->pos = 0;
 }
 
 uint_fast64_t BinaryReader::GetFileSize() const
@@ -158,16 +163,37 @@ std::unique_ptr<uint8_t[]> BinaryReader::ReadBytes(uint_fast64_t bytes)
 
 	if(this->privates->data != nullptr)
 	{
+		if(this->privates->pos + bytes > this->privates->file_size)
+		{
+			throw ("BinaryReader: tried to read past end of data (pos = "
+								+ std::to_string(this->privates->pos) + "; reading "
+								+ std::to_string(bytes) + " bytes; data length = "
+								+ std::to_string(this->privates->file_size) + " bytes)");
+		}
 		std::copy_n(this->privates->data.get() + this->privates->pos, bytes, buf.get());
 	}
 	else if(this->privates->file.is_open())
 	{
 		this->privates->file.seekg(this->privates->pos, this->privates->file.beg);
+		if(!this->privates->file.good())
+		{
+			throw std::string("BinaryReader: seek failed");
+		}
 		this->privates->file.read(reinterpret_cast<char*>(buf.get()), bytes);
+		if(this->privates->file.eof())
+		{
+			throw ("BinaryReader: tried to read past end of file (pos = "
+								+ std::to_string(this->privates->pos)
+								+ "; reading " + std::to_string(bytes) + " bytes)");
+		}
+		if(!this->privates->file.good())
+		{
+			throw std::string("BinaryReader: read failed");
+		}
 	}
 	else
 	{
-		throw std::string("BinaryReader: tried to read, but no file is loaded");
+		throw std::string("BinaryReader: tried to read, but no file is open");
 	}
 
 	this->privates->pos += bytes;

@@ -43,7 +43,7 @@ BinaryWriter::BinaryWriter(const std::string& filename, bool bak)
 		BinaryLibUtil::move_file(filename.c_str(), s_bak.c_str(), true);
 	}
 	this->privates->file.open(filename.c_str(), std::ios::binary | std::ios::trunc);
-	if(!this->privates->file.is_open())
+	if(!this->privates->file.good())
 	{
 		throw ("BinaryWriter: error opening \"" + filename + "\"");
 	}
@@ -89,12 +89,16 @@ void BinaryWriter::WriteChars(const char* c, uint_fast64_t len)
 
 void BinaryWriter::WriteBytes(const uint8_t* c, uint_fast64_t len)
 {
-	if(this->privates->file == nullptr)
+	if(!this->privates->file.is_open())
 	{
-		return;
+		throw std::string("BinaryWriter: tried to write, but no file is open");
 	}
 
 	this->privates->file.write(reinterpret_cast<const char*>(c), len);
+	if(!this->privates->file.good())
+	{
+		throw std::string("BinaryWriter: write failed");
+	}
 }
 
 void BinaryWriter::WriteBytes(const std::vector<uint8_t>& bytes)
