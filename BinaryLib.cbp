@@ -36,6 +36,7 @@
 					<Add option="-O2" />
 					<Add option="-Wextra" />
 					<Add option="-Wall" />
+					<Add option="-fno-strict-aliasing" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />

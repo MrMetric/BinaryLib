@@ -103,12 +103,18 @@ void BinaryWriter::WriteBytes(const uint8_t* c, uint_fast64_t len)
 
 void BinaryWriter::WriteBytes(const std::vector<uint8_t>& bytes)
 {
-	this->WriteBytes(&bytes[0], bytes.size());
+	if(bytes.size() > 0)
+	{
+		this->WriteBytes(&bytes[0], bytes.size());
+	}
 }
 
 void BinaryWriter::WriteChars(const std::vector<char>& bytes)
 {
-	this->WriteChars(&bytes[0], bytes.size());
+	if(bytes.size() > 0)
+	{
+		this->WriteChars(&bytes[0], bytes.size());
+	}
 }
 
 void BinaryWriter::WriteChars(const std::string& s)
