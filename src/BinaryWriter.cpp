@@ -1,4 +1,5 @@
-#include "../include/BinaryWriter.hpp"
+#include "BinaryWriter.hpp"
+
 #include <fstream>
 
 struct BinaryWriter_private

@@ -1,4 +1,5 @@
-#include "../include/BinaryReader.hpp"
+#include "BinaryReader.hpp"
+
 #include <fstream>
 #include <algorithm> // std::copy_n
 

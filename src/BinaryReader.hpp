@@ -57,7 +57,7 @@ class BinaryReader
 
 		std::string ReadString(uint_fast64_t length);
 
-		uint64_t Read7BitEncodedInt();
+		uint_fast64_t Read7BitEncodedInt();
 		std::string ReadStringMS();
 
 	private:

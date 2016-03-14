@@ -79,12 +79,12 @@
 			<Add option="-std=c++14" />
 			<Add option="-pedantic" />
 		</Compiler>
-		<Unit filename="include/BinaryLibUtil.hpp" />
-		<Unit filename="include/BinaryReader.hpp" />
-		<Unit filename="include/BinaryWriter.hpp" />
 		<Unit filename="src/BinaryLibUtil.cpp" />
+		<Unit filename="src/BinaryLibUtil.hpp" />
 		<Unit filename="src/BinaryReader.cpp" />
+		<Unit filename="src/BinaryReader.hpp" />
 		<Unit filename="src/BinaryWriter.cpp" />
+		<Unit filename="src/BinaryWriter.hpp" />
 		<Extensions>
 			<code_completion />
 			<debugger />

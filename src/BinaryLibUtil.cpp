@@ -1,4 +1,4 @@
-#include "../include/BinaryLibUtil.hpp"
+#include "BinaryLibUtil.hpp"
 
 #include <cstring> // strerror
 
