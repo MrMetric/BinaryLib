@@ -11,7 +11,7 @@ struct BinaryReader_private
 	uint_fast64_t pos;
 };
 
-template <class type> type bytes_to_type(BinaryReader* self)
+template <typename type> type bytes_to_type(BinaryReader* self)
 {
 	std::unique_ptr<uint8_t[]> buf = self->ReadBytes(sizeof(type));
 	type ret = *(reinterpret_cast<type*>(buf.get()));
@@ -210,7 +210,7 @@ std::string BinaryReader::ReadString(uint_fast64_t length)
 }
 
 // derived from http://www.terrariaonline.com/threads/86509/
-uint64_t BinaryReader::Read7BitEncodedInt()
+uint_fast64_t BinaryReader::Read7BitEncodedInt()
 {
 	uint_fast64_t ret = 0;
 	uint_fast8_t shift = 0;
@@ -225,7 +225,7 @@ uint64_t BinaryReader::Read7BitEncodedInt()
 			return ret;
 		}
 	}
-	throw std::string("Failed to read a 7-bit encoded integer");
+	throw std::string("7-bit encoded integer is too long");
 }
 
 std::string BinaryReader::ReadStringMS()
