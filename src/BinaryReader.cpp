@@ -76,7 +76,7 @@ void BinaryReader::ChangeFile(const std::string& filename)
 	{
 		throw ("BinaryReader: error opening \"" + filename + "\"");
 	}
-	this->privates->file_size = this->privates->file.tellg();
+	this->privates->file_size = static_cast<uint_fast64_t>(this->privates->file.tellg());
 	if(!this->privates->file.good())
 	{
 		throw ("BinaryReader: error getting size of \"" + filename + "\"");
